@@ -1,0 +1,1 @@
+Guide to adding support for a board.
