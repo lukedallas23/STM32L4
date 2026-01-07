@@ -1,16 +1,6 @@
 #include "dmalib.h"
 
 /*
-    DMA Module TODO
-    - MEM2MEM Mode
-    - Perph to Perph mode
-    - DMA Error Checking
-        - Function calls should all check if startup
-          has happened and there is no TIP.
-
-*/
-
-/*
     Gets the base address of a DMA module.
 
     @param  module  Module to get the base address of

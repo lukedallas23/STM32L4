@@ -1,0 +1,66 @@
+TODO LIST
+--- GENERAL ---
+- Makefile for building
+- Create a stdlib folder with interruptTable and reg
+- Update include file path
+- Add support template
+- Pindef folder for other processors
+- Figure Nested and Extended Interrupts and Events Controllers
+- Modules for other functionallity
+    1. Power Control (PWR, ch5)
+    2. Clock Recovery System (CRS, ch7)
+    3. System Configuration Controller (SYSCFG, ch9)
+    4. Cyclic Redundance Check Calculation Unit (CRC, ch14)
+    5. Quad-SPI Interface (QUADSPI, ch15)
+    6. Analog-to-digital converters (ADC, ch16)
+    7. Digital-to-analog converter (DAC, ch17)
+    8. Voltage Reference Buffer (VREFBUF, ch18)
+    9. Comparator (COMP, ch19)
+    10. Operational Amplifiers (OPAMP, ch20)
+    11. Digital Filter for Sigma Delta Modulators (DFSDM, ch21)
+    12. Liquid Crystal Display Controller (LCD, ch22)
+    13. Touch Sensing Controller (TSC, ch23)
+    14. True Random Number Generator (RNG, ch24)
+    15. AES Hardware Accelerator (AES, ch25)
+    16. Advanced-Control Timer (TIM1, ch26)
+    17. General-Purpose Timers (TIM2/3, ch27)
+    18. General-Purpose Timers (TIM15/16, ch28)
+    19. Basic Timers (TIM6/7, ch29)
+    20. Low-power Timer (LPTIM, ch30, 31)
+    21. Independent Watchdog (IWDG, ch33)
+    22. System Window Watchdog (WWDG, ch34)
+    23. Real-Time Clock (RTC, ch35)
+    24. Tamper and Backup Registers (TAMP, ch36)
+    25. Inter-Integrated Circuit Interface (I2C, ch38)
+    26. Universal Synchronous/Asynchronous Receiver Transmitter (USART/UART, ch39)
+    27. Low-Power Universal Asynchronous Receiver Transmitter (LPUART, ch40)
+    28. Serial Audio Interface (SAI, ch41)
+    29. Single Wire Protocol Master Interface (SWPMI, ch42)
+    30. SD/SDIO/MMC Card Host Interface (SDMMC, ch44)
+    31. Controller Area Network (bxCAN, ch45)
+    32. Universal Serial Bus Full-speed Device Interface (USB, ch46)
+    33. Debug Support (DBG, ch47)
+    34. Device Electronic Signature (DES, ch48)
+
+
+
+----- DMA -----
+- MEM2MEM Mode
+- Perph to Perph mode
+- DMA Error Checking
+    * Function calls should all check if startup has happened and there is no TIP.
+
+----- SPI -----
+- Error Checking
+- SPI Error Codes
+- CRC feature enable
+- Interrupt Enable is causing an error in the bootloader when programming
+- Build option if no DMA being built
+
+----- RCC -----
+- Error Checking
+- RCC is very feature rich, need to go though and create function to change
+  those features. Only have CLK enable/disable and RESET module implemented.
+
+----- GPIO ----
+- Error Checking
