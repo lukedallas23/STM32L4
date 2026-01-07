@@ -300,23 +300,3 @@ typedef enum {
 } SPI_RXNE_FLAG;
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-  3. Email about schlorship
-  4. Change resume
-  5. Change cover letter
-  6. Work on SPI driver.
-
-*/

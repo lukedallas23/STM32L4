@@ -33,6 +33,9 @@ typedef struct SPI_BUFFER_INFO_t {
 
 } SPI_BUFFER_INFO;
 
+//
+// SPI Buffer Information
+//
 volatile extern SPI_BUFFER_INFO spiBufInfo[NUM_SPI_MODULE];
 
 /*
@@ -48,7 +51,18 @@ uint32_t spiGetBaseAdr(SPI_MODULE module);
 
 
 /*
-    Initializes a SPI module with basic settings.
+    Initializes a SPI module with default settings.
+
+    Default Settings:
+    - 2 Line Unidirectional Mode
+    - Hardware CRC Calculation disabled
+    - Full duplex
+    - External Chip Select
+    - Data is transmitted/received MSB first
+    - Baud rate prescaler is 1/16
+    - Master Configuration
+    - 8-bit frame size
+    - SPI Motorola mode
 
     @param  module      SPI Module to use
     @param  mosi        Master Out Slave In pin
@@ -61,7 +75,6 @@ uint32_t spiGetBaseAdr(SPI_MODULE module);
 
 */
 int spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PIN sclk, uint8_t spiMode);
-
 
 
 /*
@@ -151,18 +164,6 @@ void spiTxFrame(SPI_MODULE module);
 */
 void spiRxFrame(SPI_MODULE module);
 
-/*
-    Disables or enables the SPI module. The register settings are preserved. The
-    module should be disabled and then reenabled if changing any control
-    register.
-
-    If initializing the module after restart, spiInitModule should be used.
-
-    @param  module  SPI Module to disable or enable
-
-*/
-void spiSetModuleOnOff(SPI_MODULE module, SPI_EN_MODE mode);
-
 
 /*
     Resets the SPI module. The register settings are not preserved and are
@@ -173,6 +174,45 @@ void spiSetModuleOnOff(SPI_MODULE module, SPI_EN_MODE mode);
 
 */
 void spiResetModule(SPI_MODULE module);
+
+
+/*
+    Disables the SPI module by turning off the SPI enable flag.
+
+    @param  module  SPI Module to disable
+
+*/
+void spiDisableModule(SPI_MODULE module);
+
+
+/*
+    Enables an SPI module by turning on the SPI enable flag.
+
+    @param  module  SPI module to enable
+
+*/
+void spiEnableModule(SPI_MODULE module);
+
+
+/*
+    Sets the baud rate prescaler of a SPI module.
+
+    @param  module      Module to set baud rate
+    @param  buadRate    Baud rate prescaler
+
+*/
+void spiSetBaudRate(SPI_MODULE module, SPI_BR_MODE baudRate);
+
+
+/*
+    Gets the baud rate prescaler of a SPI module.
+
+    @param  module      Module to get baud rate
+    
+    @retval Baud rate prescaler
+
+*/
+SPI_BR_MODE getSetBaudRate(SPI_MODULE module);
 
 
 /*  
@@ -198,9 +238,39 @@ void spiResetModule(SPI_MODULE module);
 */
 int spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData);
 
+
+/*
+    Checks if there is an SPI transfer in progress.
+
+    This should be used to check if a transfer is ongoing before
+    starting a new one.
+
+    @param  module  Module to check
+    
+    @retval `0` No transfer is in progress
+    @retval `1` Transfer is currently in progress
+
+*/
+int spiTsferInProgress(SPI_MODULE module);
+
+
 /*
     IRQ Handler for SPI1
 */
 void spi1_handler();
+
+
+/*
+    IRQ Handler for SPI2
+*/
+void spi2_handler();
+
+
+/*
+    IRQ Handler for SPI3
+*/
+void spi3_handler();
+
+
 
 #endif

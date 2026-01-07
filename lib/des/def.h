@@ -1,3 +1,12 @@
+/*
+    lib/des/deslib.h
+
+    STM32L41-46 Device Electronic Signature register definitions.
+
+    Date: 01/07/2026
+
+*/
+
 #ifndef DES_DEF
 #define DES_DEF
 

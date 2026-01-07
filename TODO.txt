@@ -4,9 +4,11 @@ TODO LIST
 - Makefile for building
 - Create a stdlib folder with interruptTable and reg
 - Update include file path
+- Library File Organization
 - Add support template
 - Pindef folder for other processors
 - Figure Nested and Extended Interrupts and Events Controllers
+- Device (like W5500 support)
 - Modules for other functionallity
     1. Power Control (PWR, ch5)
     2. Clock Recovery System (CRS, ch7)
@@ -48,6 +50,7 @@ TODO LIST
 - Perph to Perph mode
 - DMA Error Checking
     * Function calls should all check if startup has happened and there is no TIP.
+- DMA Interrupt Enable
 
 ----- SPI -----
 - Error Checking
@@ -55,6 +58,11 @@ TODO LIST
 - CRC feature enable
 - Interrupt Enable is causing an error in the bootloader when programming
 - Build option if no DMA being built
+- Could put all ISR's into one
+- LDMA_TX and LDMA_RX
+- Need new methods for
+  1. Slave mode
+  2. Unidirectional mode
 
 ----- RCC -----
 - Error Checking

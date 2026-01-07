@@ -62,7 +62,7 @@ int spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PI
         case 3:
             if (!moduleSupported(SPI3)) return 1; break;
         default:
-            return 1; break;
+            return 1;
     }
 
     // Set Pins as alternate functions
@@ -73,7 +73,7 @@ int spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PI
     // Reset Module and start peripheral clock
     switch (module) {
         case 1:
-            //rccReset(RCC_RST_SPI1);
+            rccReset(RCC_RST_SPI1);
             rccSetClock(RCC_CLK_SPI1, RCC_CLOCK_EN);
             gpioSetAltFn(mosi, SPI1);
             gpioSetAltFn(miso, SPI1);
@@ -127,9 +127,6 @@ int spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PI
     // RXNE event for 1/4th full (8 bit)
     setRegVal(spiGetBaseAdr(module) + R_SPI_CR2_OFF, SPI_FRXTH_1_4, N_FRXTH, S_FRXTH);
 
-    // Turn on SPI
-    setRegVal(spiGetBaseAdr(module) + R_SPI_CR1_OFF, SPI_MODULE_EN, N_SPE, S_SPE);
-
     return 0;
 }
 
@@ -156,8 +153,9 @@ int spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PI
 */
 int spiSendData(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData) {
 
-    // If the length is not zero, then there is a transfer in progress
-    if (spiBufInfo[module - 1].len != 0) return 1;
+    if (1 == spiTsferInProgress(module)) return 1;
+
+    spiEnableModule(module);
 
     spiBufInfo[module - 1].len = bufLen;
     spiBufInfo[module - 1].pos = 0;
@@ -178,6 +176,8 @@ int spiSendData(SPI_MODULE module, unsigned int bufLen, void *sendData, void *re
     spiBufInfo[module - 1].pos = 0;
     spiBufInfo[module - 1].rxBuf = NULL;
     spiBufInfo[module - 1].txBuf = NULL;
+
+    spiDisableModule(module);
 
     return 0;
 }
@@ -207,8 +207,9 @@ int spiSendData(SPI_MODULE module, unsigned int bufLen, void *sendData, void *re
 int spiSendDataInt(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData) {
 
     // If the length is not zero, then there is a transfer in progress
-    if (spiBufInfo[module - 1].len != 0) return 1;
-    if (sendData == NULL && recData == NULL) return 0;
+    if (spiTsferInProgress(module)) return 1;
+
+    spiEnableModule(module);
 
     // Enable RX buf full interrupt
     setRegVal16(spiGetBaseAdr(module)+R_SPI_CR2_OFF, SPI_RXNE_INT_EN, N_RXNEIE, S_RXNEIE);
@@ -225,6 +226,7 @@ int spiSendDataInt(SPI_MODULE module, unsigned int bufLen, void *sendData, void 
 
 }
 
+
 /*
     Set the frame length of the SPI module. The default value is 8
 
@@ -234,7 +236,8 @@ int spiSendDataInt(SPI_MODULE module, unsigned int bufLen, void *sendData, void 
 */
 void spiSetFrameLength(SPI_MODULE module, unsigned int frameLen) {
 
-    spiSetModuleOnOff(module, SPI_MODULE_DIS);
+    spiDisableModule(module);
+
     setRegVal16(spiGetBaseAdr(module)+R_SPI_CR2_OFF, frameLen - 1, N_DS, S_DS);
 
     if (frameLen <= 8) {
@@ -243,7 +246,7 @@ void spiSetFrameLength(SPI_MODULE module, unsigned int frameLen) {
         setRegVal16(spiGetBaseAdr(module)+R_SPI_CR2_OFF, SPI_FRXTH_1_2, N_FRXTH, S_FRXTH);
     }
 
-    spiSetModuleOnOff(module, SPI_MODULE_EN);
+    spiEnableModule(module);
 
 }
 
@@ -272,6 +275,7 @@ uint8_t spiGetFrameLength(SPI_MODULE module) {
 */
 void spiTxFrame(SPI_MODULE module) {
 
+    // If no buffer specified, send garbage
     if (spiBufInfo[module-1].txBuf == NULL) {
         if (spiGetFrameLength(module) <= 8) {
             setRegVal8(spiGetBaseAdr(module)+R_SPI_DR_OFF, 0xFF, 0, 8);
@@ -308,7 +312,7 @@ void spiTxFrame(SPI_MODULE module) {
 */
 void spiRxFrame(SPI_MODULE module) {
 
-
+    // If no buffer provided, discard received data.
     if (spiBufInfo[module-1].rxBuf == NULL) {
         if (spiGetFrameLength(module) <= 8) {
             uint8_t garbage = getRegVal8(spiGetBaseAdr(module)+R_SPI_DR_OFF, 0, 8);
@@ -332,22 +336,6 @@ void spiRxFrame(SPI_MODULE module) {
     }
 }
 
-
-/*
-    Disables or enables the SPI module. The register settings are preserved. The
-    module should be disabled and then reenabled if changing any control
-    register.
-
-    If initializing the module after restart, spiInitModule should be used.
-
-    @param  module  SPI Module to disable or enable
-
-*/
-void spiSetModuleOnOff(SPI_MODULE module, SPI_EN_MODE mode) {
-
-    setRegVal16(spiGetBaseAdr(module)+R_SPI_CR1_OFF, mode, N_SPE, S_SPE);
-
-}
 
 
 /*
@@ -378,27 +366,32 @@ void spiResetModule(SPI_MODULE module) {
 
 
 /*
-    Disables the SPI module by turning off the peripheral clocks.
+    Disables the SPI module by turning off the SPI enable flag.
 
     @param  module  SPI Module to disable
 
 */
 void spiDisableModule(SPI_MODULE module) {
 
-    // Reset Module and start peripheral clock
-    switch (module) {
-        case 1:
-            rccReset(RCC_RST_SPI1); 
-            rccSetClock(RCC_CLK_SPI1, RCC_CLOCK_DIS); break;
-        case 2:
-            rccReset(RCC_RST_SPI2);
-            rccSetClock(RCC_CLK_SPI2, RCC_CLOCK_DIS); break;
-        case 3:
-            rccReset(RCC_RST_SPI3);
-            rccSetClock(RCC_CLK_SPI3, RCC_CLOCK_DIS); break;
-        default:
-            break;
+    while (getRegVal(spiGetBaseAdr(module)+R_SPI_SR_OFF, N_FTLVL, S_FTLVL) != SPI_FTLVL_EMPTY);
+    while (getRegVal(spiGetBaseAdr(module)+R_SPI_SR_OFF, N_BSY, S_BSY) == SPI_BUSY);
+    setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_MODULE_DIS, N_SPE, S_SPE);
+    while (getRegVal(spiGetBaseAdr(module)+R_SPI_SR_OFF, N_FRLVL, S_FRLVL) != SPI_FRLVL_EMPTY) {
+        uint16_t garbage = getRegVal16(spiGetBaseAdr(module)+R_SPI_DR_OFF, 0, 16);
     }
+
+}
+
+
+/*
+    Enables an SPI module by turning on the SPI enable flag.
+
+    @param  module  SPI module to enable
+
+*/
+void spiEnableModule(SPI_MODULE module) {
+
+    setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_MODULE_EN, N_SPE, S_SPE);
 
 }
 
@@ -412,9 +405,9 @@ void spiDisableModule(SPI_MODULE module) {
 */
 void spiSetBaudRate(SPI_MODULE module, SPI_BR_MODE baudRate) {
 
-    spiSetModuleOnOff(module, SPI_MODULE_DIS);
+    spiDisableModule(module);
     setRegVal16(spiGetBaseAdr(module)+R_SPI_CR1_OFF, baudRate, N_SPI_BR, S_SPI_BR);
-    spiSetModuleOnOff(module, SPI_MODULE_EN);
+    spiEnableModule(module);
 
 }
 
@@ -461,6 +454,8 @@ int spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendData, void 
     DMA_REQ dmaRx;
     uint32_t spiBase = spiGetBaseAdr(module);
 
+    if (spiTsferInProgress(module) == 1) return 1;
+
     switch (module) {
         case 1:
             dmaTx = DMA1_SPI1_TX;
@@ -475,7 +470,7 @@ int spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendData, void 
             break;
     }
 
-    spiSetModuleOnOff(module, SPI_MODULE_DIS);
+    spiDisableModule(module);
 
     setRegVal16(spiBase+R_SPI_CR2_OFF, SPI_RX_BUF_DMA_EN, N_RXDMAEN, S_RXDMAEN);
 
@@ -495,7 +490,7 @@ int spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendData, void 
     
     setRegVal16(spiBase+R_SPI_CR2_OFF, SPI_TX_BUF_DMA_EN, N_TXDMAEN, S_TXDMAEN);
     
-    spiSetModuleOnOff(module, SPI_MODULE_EN);
+    spiEnableModule(module);
     
     return 0;
 }
@@ -515,8 +510,8 @@ int spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendData, void 
 */
 int spiTsferInProgress(SPI_MODULE module) {
 
-    // The spiBufInfo length is set to 1 during a poll or interrupt transfer.
-    if (spiBufInfo->len != 0) return 1;
+    // The spiBufInfo length is >0 during a poll or interrupt transfer.
+    if (spiBufInfo[module-1].len != 0) return 1;
 
     // For DMA transfers, check if the BSY flag is set
     if (SPI_BUSY == getRegVal16(spiGetBaseAdr(module) + R_SPI_SR_OFF, N_BSY, S_BSY)) return 1;
@@ -553,4 +548,65 @@ void spi1_handler() {
     }
 
 }
+
+
+/*
+    IRQ Handler for SPI2
+*/
+void spi2_handler() {
+
+    ClearPendingIRQ(P_INT_SPI2);
+
+    // If Receive Flag is active
+    if (getRegVal16(R_SPI2_BASE + R_SPI_SR_OFF, N_RXNE, S_RXNE) &&
+        getRegVal16(R_SPI2_BASE + R_SPI_CR2_OFF, N_RXNEIE, S_RXNEIE))
+    {
+        spiRxFrame(2);
+
+        // Check if transfer is done
+        if (spiBufInfo[1].pos == spiBufInfo[1].len) {
+            spiBufInfo[1].pos = 0;
+            spiBufInfo[1].len = 0;
+            spiBufInfo[1].rxBuf = NULL;
+            spiBufInfo[1].txBuf = NULL;
+            return;
+        }
+
+        spiTxFrame(2);
+
+        return;
+    }
+
+}
+
+
+/*
+    IRQ Handler for SPI3
+*/
+void spi3_handler() {
+
+    ClearPendingIRQ(P_INT_SPI3);
+
+    // If Receive Flag is active
+    if (getRegVal16(R_SPI3_BASE + R_SPI_SR_OFF, N_RXNE, S_RXNE) &&
+        getRegVal16(R_SPI3_BASE + R_SPI_CR2_OFF, N_RXNEIE, S_RXNEIE))
+    {
+        spiRxFrame(3);
+
+        // Check if transfer is done
+        if (spiBufInfo[2].pos == spiBufInfo[2].len) {
+            spiBufInfo[2].pos = 0;
+            spiBufInfo[2].len = 0;
+            spiBufInfo[2].rxBuf = NULL;
+            spiBufInfo[2].txBuf = NULL;
+            return;
+        }
+
+        spiTxFrame(3);
+
+        return;
+    }
+
+}
+
 

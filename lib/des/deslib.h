@@ -1,3 +1,15 @@
+/*
+    lib/des/deslib.h
+
+    STM32L41-46 Device Electronic Signature library.
+
+    This library contains functions to read the unique device
+    ID, flash size, and package.
+
+    Date: 01/07/2026
+
+*/
+
 #ifndef DESLIB_H
 #define DESLIB_H
 
