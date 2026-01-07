@@ -1,6 +1,14 @@
 #include "dmalib.h"
 
-volatile uint64_t SPI_ERR = 0ULL;
+/*
+    DMA Module TODO
+    - MEM2MEM Mode
+    - Perph to Perph mode
+    - DMA Error Checking
+        - Function calls should all check if startup
+          has happened and there is no TIP.
+
+*/
 
 /*
     Gets the base address of a DMA module.
@@ -100,7 +108,11 @@ void dmaSetChannel(DMA_REQ req) {
     @param  fromAddr    Address to read from
     @param  toAddr      Address to write to
 
-    @retval 
+
+    @retval `DMA_NO_ERROR` Channel succussfully set up.
+    @retval `DMA_IN_PROGRESS` There is a transfer in progress on the requested channel
+    @retval `DMA_ERROR` There was an error for the requested peripheral. This must be handled using
+    dmaGetStatus  
 
 */
 DMA_STATUS dmaTsferSetup(DMA_REQ req, DMA_MODE mode, uint32_t fromAddr, uint32_t toAddr) {
@@ -115,19 +127,17 @@ DMA_STATUS dmaTsferSetup(DMA_REQ req, DMA_MODE mode, uint32_t fromAddr, uint32_t
             break;
     }
 
-    // If there was an error on the current channel
-    if (dmaGetStatus(req) == )
+    // Is there a transfer in progress on the channel
+    if (getRegVal(dmaGetChanAdr(req, R_DMA_CNDTR_OFF), N_NDT, S_NDT) > 0) {
+        return DMA_IN_PROGRESS;
+    }
 
-    // If there is another transfer in progress on the same channel, the return
-    if (getRegVal(dmaGet))
+    // Is the error bit set on the channel
+    if (getRegVal(dmaGetBaseAdr(_DMA_MOD(req))+R_DMA_ISR_OFF, N_TEIF1 + 4*(_DMA_CHAN(req)-1), S_TEIF) == DMA_TE_EVENT) {
+        return DMA_ERROR;
+    }
 
-
-    // Reset Channel registers
-    setRegVal(dmaGetChanAdr(req, R_DMA_CCR_OFF), 0, 0, 32);
-    setRegVal(dmaGetChanAdr(req, R_DMA_CNDTR_OFF), 0, 0, 32);
-    setRegVal(dmaGetChanAdr(req, R_DMA_CPAR_OFF), 0, 0, 32);
-    setRegVal(dmaGetChanAdr(req, R_DMA_CMAR_OFF), 0, 0, 32);
-
+    dmaResetChannel(req);
     dmaSetChannel(req);
 
     // Set Peripheral and Memory Addresses
@@ -215,20 +225,13 @@ void dmaSetCircMode(DMA_REQ req, DMA_CIRC_MODE circMode) {
     @param  req     DMA Request type
 
     @retval `DMA_NO_ERROR` Channel succussfully set up.
-    @retval `DMA_IN_PROGRESS` There is a transfer in progress on the requested channel
+    @retval `DMA_IN_PROGRESS` There is a transfer in progress for the req DMA
     @retval `DMA_ERROR` There was an error for the requested peripheral  
 
 */
 DMA_STATUS dmaGetStatus(DMA_REQ req) {
 
-    // Check if there is an error using ERROR register and clear ERROR
-    if (SPI_ERR & (1ULL << _DMA_ERR(req))) {
-        SPI_ERR &= ~(1ULL << _DMA_ERR(req));
-        return DMA_ERROR;
-    }
-
     // Check if the error bit is set in the ISR (and clear it)
-    // TODO this should only trigger if the error is on the right channel
     if (getRegVal(
         dmaGetBaseAdr(_DMA_MOD(req))+R_DMA_ISR_OFF, 
         N_TEIF1 + 4*(_DMA_CHAN(req)-1), 
@@ -238,7 +241,7 @@ DMA_STATUS dmaGetStatus(DMA_REQ req) {
         // Is the DMA on the channel the same as the req? If not
         // then ignore. If yes, check for error.
         if (getRegVal(
-            dmaGetBaseAdr(_DAM_MOD(req))+R_DMA_CSELR_OFF,
+            dmaGetBaseAdr(_DMA_MOD(req))+R_DMA_CSELR_OFF,
             S_CS*(_DMA_CHAN(req)-1),
             S_CS) == _DMA_MUX(req)
         ) {
@@ -267,13 +270,42 @@ DMA_STATUS dmaGetStatus(DMA_REQ req) {
         }
     }
 
-    // If ERR reg is not set, ERR bit is not set, and there is
-    // no tsfer in progress.
+    // If ERR bit is not set, and there is no tsfer in progress.
     return DMA_NO_ERROR;
 
 }
 
 
+/*
+    Resets a DMA channel's information.
+
+    @param  req     REQ to reset channel for
+
+*/
+void dmaResetChannel(DMA_REQ req) {
+
+    // Reset Channel registers
+    setRegVal(dmaGetChanAdr(req, R_DMA_CCR_OFF), 0, 0, 32);
+    setRegVal(dmaGetChanAdr(req, R_DMA_CNDTR_OFF), 0, 0, 32);
+    setRegVal(dmaGetChanAdr(req, R_DMA_CPAR_OFF), 0, 0, 32);
+    setRegVal(dmaGetChanAdr(req, R_DMA_CMAR_OFF), 0, 0, 32);
+
+    // Reset Channel No. and ISR
+    setRegVal(
+        dmaGetBaseAdr(_DMA_MOD(req)) + R_DMA_IFCR_OFF, 
+        0xF,
+        4*(_DMA_CHAN(req)-1),
+        4
+    );
+
+    setRegVal(
+        dmaGetBaseAdr(_DMA_MOD(req)) + R_DMA_CSELR_OFF,
+        0,
+        S_CS*(_DMA_CHAN(req)-1),
+        S_CS   
+    );
+
+}
 
 /*
 
