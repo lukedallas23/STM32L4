@@ -1,5 +1,6 @@
 TODO LIST
 --- GENERAL ---
+- Library Headers Defining Features
 - Makefile for building
 - Create a stdlib folder with interruptTable and reg
 - Update include file path
@@ -40,8 +41,6 @@ TODO LIST
     31. Controller Area Network (bxCAN, ch45)
     32. Universal Serial Bus Full-speed Device Interface (USB, ch46)
     33. Debug Support (DBG, ch47)
-    34. Device Electronic Signature (DES, ch48)
-
 
 
 ----- DMA -----
