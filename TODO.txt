@@ -59,10 +59,13 @@ TODO LIST
 - Interrupt Enable is causing an error in the bootloader when programming
 - Build option if no DMA being built
 - Could put all ISR's into one
-- LDMA_TX and LDMA_RX
 - Need new methods for
   1. Slave mode
   2. Unidirectional mode
+- FRE Handler
+- OVR Handler
+- MODF Handler
+- CRCERR Handler
 
 ----- RCC -----
 - Error Checking

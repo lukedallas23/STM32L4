@@ -2,6 +2,22 @@
 #define REGLIB_H
 
 #include <stdint.h>
+
+
+//
+// Standard Error Codes - We'll move this to the stdlib later. Here
+// for now because reg.h is included in basically everything.
+//
+typedef enum {
+
+    EXIT_SUCCESS                = 0,
+    EXIT_BAD_PARAMATER          = 1,
+    EXIT_UNSUPPORTED            = 2,
+    EXIT_TSFER_IN_PROGRESS      = 3
+
+} EXIT_STATUS;
+
+
 /*
     Gets the value of a bit field within a register.
 

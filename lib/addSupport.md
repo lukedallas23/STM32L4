@@ -1,1 +1,3 @@
 Guide to adding support for a board.
+
+arm-none-eabi-gcc main.c startup.c lib/gpio/def.h lib/gpio/gpiolib.h lib/gpio/gpiolib.c lib/spi/def.h lib/spi/spilib.h lib/spi/spilib.c lib/pindef.c lib/pindef.h interruptTable.h interruptTable.c lib/reg.c lib/reg.h lib/rcc/def.h lib/rcc/rcclib.c lib/rcc/rcclib.h lib/dma/def.h lib/dma/dmalib.h lib/dma/dmalib.c -T linker_script.ld -o spi.elf -mcpu=cortex-m4 -mthumb -nostdlib

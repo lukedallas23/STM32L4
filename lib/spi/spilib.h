@@ -212,7 +212,7 @@ void spiSetBaudRate(SPI_MODULE module, SPI_BR_MODE baudRate);
     @retval Baud rate prescaler
 
 */
-SPI_BR_MODE getSetBaudRate(SPI_MODULE module);
+SPI_BR_MODE getBaudRate(SPI_MODULE module);
 
 
 /*  

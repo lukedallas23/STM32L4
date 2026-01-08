@@ -161,6 +161,14 @@ typedef uint8_t MODULE;
 //
 #define     EVENTOUT_       ALL_PINS
 
+//
+// Unsupported Alternate Functions
+//
+#define     SPI2_SCK        0
+#define     SPI2_NSS        0
+#define     SPI2_MISO       0
+#define     SPI2_MOSI       0
+
 
 /*
     Checks if a pin is supported

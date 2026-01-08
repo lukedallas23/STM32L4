@@ -56,11 +56,20 @@ int spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PI
     // Check if module is supported and configure pins
     switch (module) {
         case 1:
-            if (!moduleSupported(SPI1)) return 1; break;
+            if (!moduleSupported(SPI1)) return 1;
+            if (pinFunctionCheck(mosi, SPI1_MOSI) == 0) return 1;
+            if (pinFunctionCheck(miso, SPI1_MISO) == 0) return 1;
+            if (pinFunctionCheck(sclk, SPI1_SCK) == 0) return 1; break;
         case 2:
-            if (!moduleSupported(SPI2)) return 1; break;
+            if (!moduleSupported(SPI2)) return 1;
+            if (pinFunctionCheck(mosi, SPI2_MOSI) == 0) return 1;
+            if (pinFunctionCheck(miso, SPI2_MISO) == 0) return 1;
+            if (pinFunctionCheck(sclk, SPI2_SCK) == 0) return 1; break;
         case 3:
-            if (!moduleSupported(SPI3)) return 1; break;
+            if (!moduleSupported(SPI3)) return 1;
+            if (pinFunctionCheck(mosi, SPI3_MOSI) == 0) return 1;
+            if (pinFunctionCheck(miso, SPI3_MISO) == 0) return 1;
+            if (pinFunctionCheck(sclk, SPI3_SCK) == 0) return 1; break;
         default:
             return 1;
     }
@@ -165,10 +174,35 @@ int spiSendData(SPI_MODULE module, unsigned int bufLen, void *sendData, void *re
     while (spiBufInfo[module - 1].pos < spiBufInfo[module - 1].len) {
         
         spiTxFrame(module);
-        
+
+        // Check if CRC should be sent
+        if (spiBufInfo[module - 1].pos + 1 == spiBufInfo[module - 1].len) {
+
+            if (spiGetCrcMode(module) == SPI_CRC_EN) {
+                setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_CRC_NEXT_CRC, N_CRCNEXT, S_CRCNEXT);
+            }
+
+        }
+    
         while (!getRegVal(spiGetBaseAdr(module) + R_SPI_SR_OFF, N_RXNE, S_RXNE));
         
         spiRxFrame(module);
+
+    }
+
+    // If CRC mode is set, 1 or 2 more transfers are required to TX/RX the CRC
+    if (spiGetCrcMode(module) == SPI_CRC_EN) {
+
+        while (!getRegVal(spiGetBaseAdr(module) + R_SPI_SR_OFF, N_RXNE, S_RXNE));
+        uint8_t garbage = getRegVal8(spiGetBaseAdr(module)+R_SPI_DR_OFF, 0, 8);
+
+        // For CRC16 a second read is necessary
+        if (spiGetCrcLength(module) == SPI_CRC_LEN_16) {
+            while (!getRegVal(spiGetBaseAdr(module) + R_SPI_SR_OFF, N_RXNE, S_RXNE));
+            uint8_t garbage = getRegVal8(spiGetBaseAdr(module)+R_SPI_DR_OFF, 0, 8);
+        }
+
+        setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_CRC_NEXT_TX, N_CRCNEXT, S_CRCNEXT);
 
     }
 
@@ -420,7 +454,7 @@ void spiSetBaudRate(SPI_MODULE module, SPI_BR_MODE baudRate) {
     @retval Baud rate prescaler
 
 */
-SPI_BR_MODE getSetBaudRate(SPI_MODULE module) {
+SPI_BR_MODE getBaudRate(SPI_MODULE module) {
 
     return getRegVal16(spiGetBaseAdr(module)+R_SPI_CR1_OFF, N_SPI_BR, S_SPI_BR);
 
@@ -517,6 +551,67 @@ int spiTsferInProgress(SPI_MODULE module) {
     if (SPI_BUSY == getRegVal16(spiGetBaseAdr(module) + R_SPI_SR_OFF, N_BSY, S_BSY)) return 1;
 
     return 0;
+}
+
+
+/*
+    Set CRC mode for an SPI transfer. CRC mode is only available if the frame
+    length is 8-bits or 16-bits
+
+    @param  module      SPI Module to set
+    @param  crcMode     On/off mode for CRC
+    @param  crcLen      8 or 16 bit CRC length
+    @param  crcPoly     CRC polynomial 
+
+    @retval `EXIT_SUCCESS` CRC mode was set
+    @retval `EXIT_BAD_PARAMETER` Polynomial was even. CRC was not changed.
+    @retval `EXIT_TSFER_IN_PROGRESS` Transfer was in progress, CRC was not changed.
+    @retval `EXIT_USUPPORTED` The frame length is not 8 or 16 bit.
+
+*/
+EXIT_STATUS spiSetCrc(SPI_MODULE module, SPI_CRC_MODE crcMode, SPI_CRC_LEN_MODE crcLen, uint16_t crcPoly) {
+
+    if (spiGetFrameLength(module) != 8 && spiGetFrameLength(module) != 16) {
+        return EXIT_UNSUPPORTED;
+    }
+
+    if (spiTsferInProgress(module) == 1) {
+        return EXIT_TSFER_IN_PROGRESS;
+    }
+
+    // Check that the polynomial has odd parity
+    int pol = 0;
+    for (uint16_t i = crcPoly; i; i >>= 1) pol += (i & 1);
+    if ((pol & 1) == 0) return EXIT_BAD_PARAMATER;
+
+    setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, crcMode, N_SPI_CRCEN, S_SPI_CRCEN);
+    setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, crcLen, N_CRCL, S_CRCL);
+    setRegVal16(spiGetBaseAdr(module)+R_SPI_CRCPR_OFF, crcPoly, 0, 16);
+    return EXIT_SUCCESS;
+}
+
+
+/*
+    Gets the CRC enable mode for an SPI module
+
+    @param  module      Module to get CRC enable
+
+*/
+SPI_CRC_MODE spiGetCrcMode(SPI_MODULE module) {
+
+    return getRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, N_SPI_CRCEN, S_SPI_CRCEN);
+}
+
+
+/*
+    Gets the CRC 8/16 bit mode for an SPI module
+
+    @param  module      Module to get CRC length
+
+*/
+SPI_CRC_LEN_MODE spiGetCrcLength(SPI_MODULE module) {
+
+    return getRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, N_CRCL, S_CRCL);
 }
 
 

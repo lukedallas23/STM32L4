@@ -10,7 +10,7 @@ void desGetUdid(DES_UDID *udid) {
 
     ((uint32_t*)udid)[0] = getRegVal(R_DES_UDID_BASE, 0, 32);
     ((uint32_t*)udid)[1] = getRegVal(R_DES_UDID_BASE+4, 0, 32);
-    ((uint32_t*)udid)[2] = getRegVal(R_DES_UDID_BASE+4, 0, 32);
+    ((uint32_t*)udid)[2] = getRegVal(R_DES_UDID_BASE+8, 0, 32);
 
 }
 
