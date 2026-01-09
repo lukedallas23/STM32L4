@@ -164,6 +164,19 @@ int spiSendData(SPI_MODULE module, unsigned int bufLen, void *sendData, void *re
 
     if (1 == spiTsferInProgress(module)) return 1;
 
+    spiDisableModule(module);
+
+    switch (module) {
+        case 1:
+            DisableIRQ(P_INT_SPI1); break;
+        case 2:
+            DisableIRQ(P_INT_SPI2); break;
+        case 3:
+            DisableIRQ(P_INT_SPI3); break;
+        default:
+            return 1;
+    }
+
     spiEnableModule(module);
 
     spiBufInfo[module - 1].len = bufLen;
@@ -176,12 +189,8 @@ int spiSendData(SPI_MODULE module, unsigned int bufLen, void *sendData, void *re
         spiTxFrame(module);
 
         // Check if CRC should be sent
-        if (spiBufInfo[module - 1].pos + 1 == spiBufInfo[module - 1].len) {
-
-            if (spiGetCrcMode(module) == SPI_CRC_EN) {
-                setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_CRC_NEXT_CRC, N_CRCNEXT, S_CRCNEXT);
-            }
-
+        if (spiBufInfo[module - 1].pos + 1 == spiBufInfo[module - 1].len && spiGetCrcMode(module) == SPI_CRC_EN) {
+            setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_CRC_NEXT_CRC, N_CRCNEXT, S_CRCNEXT);
         }
     
         while (!getRegVal(spiGetBaseAdr(module) + R_SPI_SR_OFF, N_RXNE, S_RXNE));
@@ -190,19 +199,16 @@ int spiSendData(SPI_MODULE module, unsigned int bufLen, void *sendData, void *re
 
     }
 
-    // If CRC mode is set, 1 or 2 more transfers are required to TX/RX the CRC
+    // If CRC mode is set, 1 more frame needs to be sent
     if (spiGetCrcMode(module) == SPI_CRC_EN) {
+        
+        // Need to RX 16 bits
+        setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_FRXTH_1_2, N_FRXTH, S_FRXTH);
 
         while (!getRegVal(spiGetBaseAdr(module) + R_SPI_SR_OFF, N_RXNE, S_RXNE));
-        uint8_t garbage = getRegVal8(spiGetBaseAdr(module)+R_SPI_DR_OFF, 0, 8);
+        uint16_t garbage = getRegVal16(spiGetBaseAdr(module)+R_SPI_CR1_OFF, 0, 16);
 
-        // For CRC16 a second read is necessary
-        if (spiGetCrcLength(module) == SPI_CRC_LEN_16) {
-            while (!getRegVal(spiGetBaseAdr(module) + R_SPI_SR_OFF, N_RXNE, S_RXNE));
-            uint8_t garbage = getRegVal8(spiGetBaseAdr(module)+R_SPI_DR_OFF, 0, 8);
-        }
-
-        setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_CRC_NEXT_TX, N_CRCNEXT, S_CRCNEXT);
+        setRegVal(spiGetBaseAdr(1)+R_SPI_CR1_OFF, SPI_CRC_NEXT_TX, N_CRCNEXT, S_CRCNEXT);
 
     }
 
@@ -242,6 +248,19 @@ int spiSendDataInt(SPI_MODULE module, unsigned int bufLen, void *sendData, void 
 
     // If the length is not zero, then there is a transfer in progress
     if (spiTsferInProgress(module)) return 1;
+
+    spiDisableModule(module);
+    
+    switch (module) {
+        case 1:
+            EnableIRQ(P_INT_SPI1); break;
+        case 2:
+            EnableIRQ(P_INT_SPI2); break;
+        case 3:
+            EnableIRQ(P_INT_SPI3); break;
+        default:
+            return 1;
+    }
 
     spiEnableModule(module);
 
@@ -490,21 +509,25 @@ int spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendData, void 
 
     if (spiTsferInProgress(module) == 1) return 1;
 
+    spiDisableModule(module);
+
     switch (module) {
         case 1:
+            DisableIRQ(P_INT_SPI1);
             dmaTx = DMA1_SPI1_TX;
             dmaRx = DMA1_SPI1_RX; break;
         case 2:
+            DisableIRQ(P_INT_SPI2);
             dmaTx = DMA_SPI2_TX;
             dmaRx = DMA_SPI2_RX; break;
         case 3:
+            DisableIRQ(P_INT_SPI3);
             dmaTx = DMA_SPI3_TX;
             dmaRx = DMA_SPI3_RX; break;
         default:
             break;
     }
 
-    spiDisableModule(module);
 
     setRegVal16(spiBase+R_SPI_CR2_OFF, SPI_RX_BUF_DMA_EN, N_RXDMAEN, S_RXDMAEN);
 
@@ -626,10 +649,22 @@ void spi1_handler() {
     if (getRegVal16(R_SPI1_BASE + R_SPI_SR_OFF, N_RXNE, S_RXNE) &&
         getRegVal16(R_SPI1_BASE + R_SPI_CR2_OFF, N_RXNEIE, S_RXNEIE))
     {
+
+        // If receiving data and tsfer is complete, then a CRC is what's received
+        if (spiBufInfo[0].pos == spiBufInfo[0].len) {
+            uint16_t garbage = getRegVal16(spiGetBaseAdr(1)+R_SPI_CR1_OFF, 0, 16);
+            setRegVal(spiGetBaseAdr(1)+R_SPI_CR1_OFF, SPI_CRC_NEXT_TX, N_CRCNEXT, S_CRCNEXT);
+            return;
+        }
+
         spiRxFrame(1);
 
         // Check if transfer is done
         if (spiBufInfo[0].pos == spiBufInfo[0].len) {
+
+            if (spiGetCrcMode(1) == SPI_CRC_EN) {
+                setRegVal(spiGetBaseAdr(1)+R_SPI_CR1_OFF, SPI_FRXTH_1_2, N_FRXTH, S_FRXTH);
+            }
             spiBufInfo[0].pos = 0;
             spiBufInfo[0].len = 0;
             spiBufInfo[0].rxBuf = NULL;
@@ -638,6 +673,11 @@ void spi1_handler() {
         }
 
         spiTxFrame(1);
+
+        // Check if CRC should be sent
+        if (spiBufInfo[0].pos + 1 == spiBufInfo[0].len && spiGetCrcMode(1) == SPI_CRC_EN) {
+            setRegVal(spiGetBaseAdr(1)+R_SPI_CR1_OFF, SPI_CRC_NEXT_CRC, N_CRCNEXT, S_CRCNEXT);
+        }
 
         return;
     }

@@ -66,6 +66,11 @@ TODO LIST
 - OVR Handler
 - MODF Handler
 - CRCERR Handler
+- Right now DMA and Poll modes disable interrupts, but it should only disable
+  the interrupt for RXNE.
+- Need SPI ISR to be the same for each module.
+- Need to set RXNE buffer full bit at the start of a transfer.
+- CRC for 8/8 Mode need buffer flag set to 8 or can it stay at 16?
 
 ----- RCC -----
 - Error Checking
