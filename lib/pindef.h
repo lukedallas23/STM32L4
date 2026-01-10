@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "reg.h"
 
 /*
     Support for up to 13 ports with 16 pins each and a
@@ -178,7 +179,7 @@ typedef uint8_t MODULE;
     @retval `0` The pin is not supported
     @retval `1` The pin is supported
 */
-int pinSupported(PIN pin);
+EXIT_STATUS pinSupported(PIN pin);
 
 
 /*
@@ -191,7 +192,7 @@ int pinSupported(PIN pin);
     @retval `1` The pin does contain the function
 
 */
-int pinFunctionCheck(PIN pin, FUNCTION fn);
+EXIT_STATUS pinFunctionCheck(PIN pin, FUNCTION fn);
 
 
 /*
@@ -202,4 +203,4 @@ int pinFunctionCheck(PIN pin, FUNCTION fn);
     @retval `0` The module is not supported
     @retval `1` The module is supported
 */
-int moduleSupported(MODULE module);
+EXIT_STATUS moduleSupported(MODULE module);

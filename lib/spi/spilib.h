@@ -38,6 +38,15 @@ typedef struct SPI_BUFFER_INFO_t {
 //
 volatile extern SPI_BUFFER_INFO spiBufInfo[NUM_SPI_MODULE];
 
+
+/*
+    SPI IRQ handlers.
+*/
+void spi1_handler();
+void spi2_handler();
+void spi3_handler();
+
+
 /*
     Gets the base address of a SPI module.
 
@@ -70,11 +79,13 @@ uint32_t spiGetBaseAdr(SPI_MODULE module);
     @param  sclk        Serial clock pin
     @param  spiMode     SPI Mode number to use (0-3)
 
-    @retval `0` Successfully initialized SPI
-    @retval `1` Failed to initialize
+    @retval `EXIT_SUCCESS` The module was properly initialized
+    @retval `EXIT_UNSUPPORTED` The module entered was not supported
+    @retval `EXIT_BAD_PARAMATER` A entered paramater was incorrect.
 
 */
-int spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PIN sclk, uint8_t spiMode);
+EXIT_STATUS spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PIN sclk, uint8_t spiMode);
+
 
 
 /*
@@ -93,10 +104,11 @@ int spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PI
     @param  sendData    Buffer of data to send. Set to NULL if this does not matter.
     @param  recData     Buffer to place received data. Set to NULL if this does not matter.
 
-    @retval Number of bytes sent and received.
+    @retval `EXIT_SUCCESS` Transfer completed successfully
+    @retval `EXIT_TSFER_IN_PROGRESS` Transfer did not start as another is in progress.
 
 */
-int spiSendData(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData);
+EXIT_STATUS spiSendData(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData);
 
 
 /*  
@@ -116,11 +128,11 @@ int spiSendData(SPI_MODULE module, unsigned int bufLen, void *sendData, void *re
     @param  recData     Buffer to place received data. Set to NULL if this does not matter.
 
 
-    @retval `0` Data transfer began
-    @retval `1` Transfer in progress 
+    @retval `EXIT_SUCCESS` Transfer started successfully. Does not indicate transfer completed.
+    @retval `EXIT_TSFER_IN_PROGRESS` Transfer did not start as another is in progress.
 
 */
-int spiSendDataInt(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData);
+EXIT_STATUS spiSendDataInt(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData);
 
 
 /*
@@ -129,8 +141,12 @@ int spiSendDataInt(SPI_MODULE module, unsigned int bufLen, void *sendData, void 
     @param  module      SPI module number to set frame length
     @param  frameLen    Bytes to send per frame
 
+    @retval `EXIT_TSFER_IN_PROGRESS` Transfer in progress, frame length not set.
+    @retval `EXIT_BAD_PARAMETER` frameLen was not in the supported range (4-16 bit)
+    @retval `EXIT_SUCCESS` Frame length was set.
+
 */
-void spiSetFrameLength(SPI_MODULE module, unsigned int frameLen);
+EXIT_STATUS spiSetFrameLength(SPI_MODULE module, unsigned int frameLen);
 
 
 /*
@@ -200,8 +216,11 @@ void spiEnableModule(SPI_MODULE module);
     @param  module      Module to set baud rate
     @param  buadRate    Baud rate prescaler
 
+    @retval `EXIT_TSFER_IN_PROGRESS` Baud rate not set, transfer in progress.
+    @retval `EXIT_SUCCESS` Base rate was set.
+
 */
-void spiSetBaudRate(SPI_MODULE module, SPI_BR_MODE baudRate);
+EXIT_STATUS spiSetBaudRate(SPI_MODULE module, SPI_BR_MODE baudRate);
 
 
 /*
@@ -232,11 +251,11 @@ SPI_BR_MODE getBaudRate(SPI_MODULE module);
     @param  recData     Buffer to place received data. Set to NULL if this does not matter.
 
 
-    @retval `0` Data transfer began
-    @retval `1` Transfer in progress 
+    @retval `EXIT_SUCCESS` Data transfer began successfully
+    @retval `EXIT_TSFER_IN_PROGRESS` Data transfer did not start as another is in progress
 
 */
-int spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData);
+EXIT_STATUS spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData);
 
 
 /*
@@ -247,30 +266,46 @@ int spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendData, void 
 
     @param  module  Module to check
     
-    @retval `0` No transfer is in progress
-    @retval `1` Transfer is currently in progress
+    @retval `EXIT_SUCCESS` No transfer is in progress
+    @retval `EXIT_TSFER_IN_PROGRESS` Transfer is currently in progress
 
 */
-int spiTsferInProgress(SPI_MODULE module);
+EXIT_STATUS spiTsferInProgress(SPI_MODULE module);
 
 
 /*
-    IRQ Handler for SPI1
+    Set CRC mode for an SPI transfer. CRC mode is only available if the frame
+    length is 8-bits or 16-bits
+
+    @param  module      SPI Module to set
+    @param  crcMode     On/off mode for CRC
+    @param  crcLen      8 or 16 bit CRC length
+    @param  crcPoly     CRC polynomial 
+
+    @retval `EXIT_SUCCESS` CRC mode was set
+    @retval `EXIT_BAD_PARAMETER` Polynomial was even. CRC was not changed.
+    @retval `EXIT_TSFER_IN_PROGRESS` Transfer was in progress, CRC was not changed.
+    @retval `EXIT_USUPPORTED` The frame length is not 8 or 16 bit.
+
 */
-void spi1_handler();
+EXIT_STATUS spiSetCrc(SPI_MODULE module, SPI_CRC_MODE crcMode, SPI_CRC_LEN_MODE crcLen, uint16_t crcPoly);
 
 
 /*
-    IRQ Handler for SPI2
+    Gets the CRC enable mode for an SPI module
+
+    @param  module      Module to get CRC enable
+
 */
-void spi2_handler();
+SPI_CRC_MODE spiGetCrcMode(SPI_MODULE module) ;
 
 
 /*
-    IRQ Handler for SPI3
+    Gets the CRC 8/16 bit mode for an SPI module
+
+    @param  module      Module to get CRC length
+
 */
-void spi3_handler();
-
-
+SPI_CRC_LEN_MODE spiGetCrcLength(SPI_MODULE module);
 
 #endif

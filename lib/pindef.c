@@ -5,13 +5,13 @@
 
     @param  pin Pin to check
 
-    @retval `0` The pin is not supported
-    @retval `1` The pin is supported
+    @retval `EXIT_UNSUPPORTED` The pin is not supported
+    @retval `EXIT_SUCCESS` The pin is supported
 */
-int pinSupported(PIN pin) {
+EXIT_STATUS pinSupported(PIN pin) {
 
-    if (!pin) return 0;
-    return 1;
+    if (!pin) return EXIT_UNSUPPORTED;
+    return EXIT_SUCCESS;
 
 }
 
@@ -22,25 +22,25 @@ int pinSupported(PIN pin) {
     @param  pin Pin to check
     @param  fn  Alternate function to check
 
-    @retval `0` The pin does not contain the function or is not supported
-    @retval `1` The pin does contain the function
+    @retval `EXIT_UNSUPPORTED` The pin does not contain the function or is not supported
+    @retval `EXIT_SUCCESS` The pin does contain the function
 
 */
-int pinFunctionCheck(PIN pin, FUNCTION fn) {
+EXIT_STATUS pinFunctionCheck(PIN pin, FUNCTION fn) {
     
-    if (!pinSupported(pin)) return 0;
+    if (pinSupported(pin) != EXIT_SUCCESS) return EXIT_UNSUPPORTED;
 
     if (fn & 0xFF == pin || (fn >> 8) & 0xFF == pin  ||
        (fn >> 16) & 0xFF == pin || (fn >> 24) & 0xFF == pin) {
     
-        return 1;
+        return EXIT_SUCCESS;
     }
 
     if (fn == ALL_PINS) {
-        return 1;
+        return EXIT_SUCCESS;
     }
 
-    return 0;
+    return EXIT_UNSUPPORTED;
 
 }
 
@@ -50,12 +50,12 @@ int pinFunctionCheck(PIN pin, FUNCTION fn) {
 
     @param  module Module to check
 
-    @retval `0` The module is not supported
-    @retval `1` The module is supported
+    @retval `EXIT_UNSUPPORTED` The module is not supported
+    @retval `EXIT_SUCCESS` The module is supported
 */
-int moduleSupported(MODULE module) {
+EXIT_STATUS moduleSupported(MODULE module) {
 
-    if (module == FN_NOT_SUPPORTED) return 0;
-    return 1;
+    if (module == FN_NOT_SUPPORTED) return EXIT_UNSUPPORTED;
+    return EXIT_SUCCESS;
 
 }

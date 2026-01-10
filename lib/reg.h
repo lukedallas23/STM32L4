@@ -13,7 +13,8 @@ typedef enum {
     EXIT_SUCCESS                = 0,
     EXIT_BAD_PARAMATER          = 1,
     EXIT_UNSUPPORTED            = 2,
-    EXIT_TSFER_IN_PROGRESS      = 3
+    EXIT_TSFER_IN_PROGRESS      = 3,
+    EXIT_UNKNOWN                = 4
 
 } EXIT_STATUS;
 

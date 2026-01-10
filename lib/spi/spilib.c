@@ -47,31 +47,35 @@ uint32_t spiGetBaseAdr(SPI_MODULE module) {
     @param  sclk        Serial clock pin
     @param  spiMode     SPI Mode number to use (0-3)
 
-    @retval `0` Successfully initialized SPI
-    @retval `1` Failed to initialize
+    @retval `EXIT_SUCCESS` The module was properly initialized
+    @retval `EXIT_UNSUPPORTED` The module entered was not supported
+    @retval `EXIT_BAD_PARAMATER` A entered paramater was incorrect.
 
 */
-int spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PIN sclk, uint8_t spiMode) {
+EXIT_STATUS spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PIN sclk, uint8_t spiMode) {
 
     // Check if module is supported and configure pins
     switch (module) {
         case 1:
-            if (!moduleSupported(SPI1)) return 1;
-            if (pinFunctionCheck(mosi, SPI1_MOSI) == 0) return 1;
-            if (pinFunctionCheck(miso, SPI1_MISO) == 0) return 1;
-            if (pinFunctionCheck(sclk, SPI1_SCK) == 0) return 1; break;
+            if (moduleSupported(SPI1) == EXIT_UNSUPPORTED || pinFunctionCheck(mosi, SPI1_MOSI) == EXIT_UNSUPPORTED ||
+                pinFunctionCheck(miso, SPI1_MISO) == EXIT_UNSUPPORTED || pinFunctionCheck(sclk, SPI1_SCK) == EXIT_UNSUPPORTED) 
+                {
+                    return EXIT_UNSUPPORTED;
+                }
         case 2:
-            if (!moduleSupported(SPI2)) return 1;
-            if (pinFunctionCheck(mosi, SPI2_MOSI) == 0) return 1;
-            if (pinFunctionCheck(miso, SPI2_MISO) == 0) return 1;
-            if (pinFunctionCheck(sclk, SPI2_SCK) == 0) return 1; break;
+            if (moduleSupported(SPI2) == EXIT_UNSUPPORTED || pinFunctionCheck(mosi, SPI2_MOSI) == EXIT_UNSUPPORTED ||
+                pinFunctionCheck(miso, SPI2_MISO) == EXIT_UNSUPPORTED || pinFunctionCheck(sclk, SPI2_SCK) == EXIT_UNSUPPORTED) 
+                {
+                    return EXIT_UNSUPPORTED;
+                }
         case 3:
-            if (!moduleSupported(SPI3)) return 1;
-            if (pinFunctionCheck(mosi, SPI3_MOSI) == 0) return 1;
-            if (pinFunctionCheck(miso, SPI3_MISO) == 0) return 1;
-            if (pinFunctionCheck(sclk, SPI3_SCK) == 0) return 1; break;
+            if (moduleSupported(SPI3) == EXIT_UNSUPPORTED || pinFunctionCheck(mosi, SPI3_MOSI) == EXIT_UNSUPPORTED ||
+                pinFunctionCheck(miso, SPI3_MISO) == EXIT_UNSUPPORTED || pinFunctionCheck(sclk, SPI3_SCK) == EXIT_UNSUPPORTED) 
+                {
+                    return EXIT_UNSUPPORTED;
+                }
         default:
-            return 1;
+            return EXIT_UNSUPPORTED;
     }
 
     // Set Pins as alternate functions
@@ -103,7 +107,7 @@ int spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PI
             gpioSetAltFn(sclk, SPI3);
             EnableIRQ(P_INT_SPI3); break;
         default:
-            return 1; break;
+            return EXIT_UNKNOWN; break;
     }
 
     
@@ -130,13 +134,13 @@ int spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PI
     // Change to Master Mode
     setRegVal(spiGetBaseAdr(module) + R_SPI_CR1_OFF, SPI_MASTER_MODE, N_MSTR, S_MSTR);
 
-    // Adjust baud rate
+    // Adjust baud rate to 1/16
     setRegVal(spiGetBaseAdr(module) + R_SPI_CR1_OFF, SPI_FPCLK_1_16, N_SPI_BR, S_SPI_BR);
 
     // RXNE event for 1/4th full (8 bit)
     setRegVal(spiGetBaseAdr(module) + R_SPI_CR2_OFF, SPI_FRXTH_1_4, N_FRXTH, S_FRXTH);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 
@@ -157,26 +161,16 @@ int spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PI
     @param  sendData    Buffer of data to send. Set to NULL if this does not matter.
     @param  recData     Buffer to place received data. Set to NULL if this does not matter.
 
-    @retval Number of bytes sent and received.
+    @retval `EXIT_SUCCESS` Transfer completed successfully
+    @retval `EXIT_TSFER_IN_PROGRESS` Transfer did not start as another is in progress.
 
 */
-int spiSendData(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData) {
+EXIT_STATUS spiSendData(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData) {
 
-    if (1 == spiTsferInProgress(module)) return 1;
+    if (spiTsferInProgress(module) == EXIT_TSFER_IN_PROGRESS) return EXIT_TSFER_IN_PROGRESS;
 
     spiDisableModule(module);
-
-    switch (module) {
-        case 1:
-            DisableIRQ(P_INT_SPI1); break;
-        case 2:
-            DisableIRQ(P_INT_SPI2); break;
-        case 3:
-            DisableIRQ(P_INT_SPI3); break;
-        default:
-            return 1;
-    }
-
+    setRegVal16(spiGetBaseAdr(module)+R_SPI_CR2_OFF, SPI_RXNE_INT_MASKED, N_RXNEIE, S_RXNEIE);
     spiEnableModule(module);
 
     spiBufInfo[module - 1].len = bufLen;
@@ -199,16 +193,20 @@ int spiSendData(SPI_MODULE module, unsigned int bufLen, void *sendData, void *re
 
     }
 
-    // If CRC mode is set, 1 more frame needs to be sent
+    // If CRC mode is set, 1 or 2 more frames needs to be sent
     if (spiGetCrcMode(module) == SPI_CRC_EN) {
         
-        // Need to RX 16 bits
-        setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_FRXTH_1_2, N_FRXTH, S_FRXTH);
+        // Need to RXNE trigger to correct size
+        if (spiGetFrameLength(module) == 16 || spiGetCrcLength(module) == SPI_CRC_LEN_16) {
+            setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_FRXTH_1_2, N_FRXTH, S_FRXTH);
+        } else {
+            setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_FRXTH_1_4, N_FRXTH, S_FRXTH);
+        }
 
         while (!getRegVal(spiGetBaseAdr(module) + R_SPI_SR_OFF, N_RXNE, S_RXNE));
         uint16_t garbage = getRegVal16(spiGetBaseAdr(module)+R_SPI_CR1_OFF, 0, 16);
 
-        setRegVal(spiGetBaseAdr(1)+R_SPI_CR1_OFF, SPI_CRC_NEXT_TX, N_CRCNEXT, S_CRCNEXT);
+        setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_CRC_NEXT_TX, N_CRCNEXT, S_CRCNEXT);
 
     }
 
@@ -219,7 +217,7 @@ int spiSendData(SPI_MODULE module, unsigned int bufLen, void *sendData, void *re
 
     spiDisableModule(module);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 
@@ -240,32 +238,19 @@ int spiSendData(SPI_MODULE module, unsigned int bufLen, void *sendData, void *re
     @param  recData     Buffer to place received data. Set to NULL if this does not matter.
 
 
-    @retval `0` Data transfer began
-    @retval `1` Transfer in progress 
+    @retval `EXIT_SUCCESS` Transfer started successfully. Does not indicate transfer completed.
+    @retval `EXIT_TSFER_IN_PROGRESS` Transfer did not start as another is in progress.
 
 */
-int spiSendDataInt(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData) {
+EXIT_STATUS spiSendDataInt(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData) {
 
-    // If the length is not zero, then there is a transfer in progress
-    if (spiTsferInProgress(module)) return 1;
+    if (spiTsferInProgress(module) == EXIT_TSFER_IN_PROGRESS) return EXIT_TSFER_IN_PROGRESS;
 
     spiDisableModule(module);
-    
-    switch (module) {
-        case 1:
-            EnableIRQ(P_INT_SPI1); break;
-        case 2:
-            EnableIRQ(P_INT_SPI2); break;
-        case 3:
-            EnableIRQ(P_INT_SPI3); break;
-        default:
-            return 1;
-    }
+
+    setRegVal16(spiGetBaseAdr(module)+R_SPI_CR2_OFF, SPI_RXNE_INT_EN, N_RXNEIE, S_RXNEIE);
 
     spiEnableModule(module);
-
-    // Enable RX buf full interrupt
-    setRegVal16(spiGetBaseAdr(module)+R_SPI_CR2_OFF, SPI_RXNE_INT_EN, N_RXNEIE, S_RXNEIE);
 
     spiBufInfo[module - 1].len = bufLen;
     spiBufInfo[module - 1].pos = 0;
@@ -275,7 +260,12 @@ int spiSendDataInt(SPI_MODULE module, unsigned int bufLen, void *sendData, void 
     // Send the first data transfer. ISR does the rest.
     spiTxFrame(module);
 
-    return 0;
+    // CRC enable needs to happen here if only 1 byte is sent
+    if (spiBufInfo[0].len == 1 && spiGetCrcMode(module) == SPI_CRC_EN) {
+        setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_CRC_NEXT_CRC, N_CRCNEXT, S_CRCNEXT);
+    }
+
+    return EXIT_SUCCESS;
 
 }
 
@@ -286,8 +276,20 @@ int spiSendDataInt(SPI_MODULE module, unsigned int bufLen, void *sendData, void 
     @param  module      SPI module number to set frame length
     @param  frameLen    Bytes to send per frame
 
+    @retval `EXIT_TSFER_IN_PROGRESS` Transfer in progress, frame length not set.
+    @retval `EXIT_BAD_PARAMETER` frameLen was not in the supported range (4-16 bit)
+    @retval `EXIT_SUCCESS` Frame length was set.
+
 */
-void spiSetFrameLength(SPI_MODULE module, unsigned int frameLen) {
+EXIT_STATUS spiSetFrameLength(SPI_MODULE module, unsigned int frameLen) {
+
+    if (spiTsferInProgress(module) == EXIT_TSFER_IN_PROGRESS) {
+        return EXIT_TSFER_IN_PROGRESS;
+    }
+
+    if (frameLen < 4 || frameLen > 16) {
+        return EXIT_BAD_PARAMATER;
+    }
 
     spiDisableModule(module);
 
@@ -446,6 +448,12 @@ void spiEnableModule(SPI_MODULE module) {
 
     setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_MODULE_EN, N_SPE, S_SPE);
 
+    if (spiGetFrameLength(module) > 8) {
+        setRegVal(spiGetBaseAdr(module)+R_SPI_CR2_OFF, SPI_FRXTH_1_2, N_FRXTH, S_FRXTH);
+    } else {
+        setRegVal(spiGetBaseAdr(module)+R_SPI_CR2_OFF, SPI_FRXTH_1_4, N_FRXTH, S_FRXTH);
+    }
+
 }
 
 
@@ -455,12 +463,20 @@ void spiEnableModule(SPI_MODULE module) {
     @param  module      Module to set baud rate
     @param  buadRate    Baud rate prescaler
 
+    @retval `EXIT_TSFER_IN_PROGRESS` Baud rate not set, transfer in progress.
+    @retval `EXIT_SUCCESS` Base rate was set.
+
 */
-void spiSetBaudRate(SPI_MODULE module, SPI_BR_MODE baudRate) {
+EXIT_STATUS spiSetBaudRate(SPI_MODULE module, SPI_BR_MODE baudRate) {
+
+    if (spiTsferInProgress(module) == EXIT_TSFER_IN_PROGRESS) {
+        return EXIT_TSFER_IN_PROGRESS;
+    }
 
     spiDisableModule(module);
     setRegVal16(spiGetBaseAdr(module)+R_SPI_CR1_OFF, baudRate, N_SPI_BR, S_SPI_BR);
     spiEnableModule(module);
+    return EXIT_SUCCESS;
 
 }
 
@@ -497,37 +513,21 @@ SPI_BR_MODE getBaudRate(SPI_MODULE module) {
     @param  recData     Buffer to place received data. Set to NULL if this does not matter.
 
 
-    @retval `0` Data transfer began
-    @retval `1` Transfer in progress 
+    @retval `EXIT_SUCCESS` Data transfer began successfully
+    @retval `EXIT_TSFER_IN_PROGRESS` Data transfer did not start as another is in progress
 
 */
-int spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData) {
+EXIT_STATUS spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData) {
+
+    if (spiTsferInProgress(module) == EXIT_TSFER_IN_PROGRESS) return EXIT_TSFER_IN_PROGRESS;
 
     DMA_REQ dmaTx;
     DMA_REQ dmaRx;
     uint32_t spiBase = spiGetBaseAdr(module);
 
-    if (spiTsferInProgress(module) == 1) return 1;
-
     spiDisableModule(module);
 
-    switch (module) {
-        case 1:
-            DisableIRQ(P_INT_SPI1);
-            dmaTx = DMA1_SPI1_TX;
-            dmaRx = DMA1_SPI1_RX; break;
-        case 2:
-            DisableIRQ(P_INT_SPI2);
-            dmaTx = DMA_SPI2_TX;
-            dmaRx = DMA_SPI2_RX; break;
-        case 3:
-            DisableIRQ(P_INT_SPI3);
-            dmaTx = DMA_SPI3_TX;
-            dmaRx = DMA_SPI3_RX; break;
-        default:
-            break;
-    }
-
+    setRegVal(spiGetBaseAdr(module)+R_SPI_CR2_OFF, SPI_RXNE_INT_MASKED, N_RXNEIE, S_RXNEIE);
 
     setRegVal16(spiBase+R_SPI_CR2_OFF, SPI_RX_BUF_DMA_EN, N_RXDMAEN, S_RXDMAEN);
 
@@ -549,7 +549,7 @@ int spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendData, void 
     
     spiEnableModule(module);
     
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 
@@ -561,19 +561,19 @@ int spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendData, void 
 
     @param  module  Module to check
     
-    @retval `0` No transfer is in progress
-    @retval `1` Transfer is currently in progress
+    @retval `EXIT_SUCCESS` No transfer is in progress
+    @retval `EXIT_TSFER_IN_PROGRESS` Transfer is currently in progress
 
 */
-int spiTsferInProgress(SPI_MODULE module) {
+EXIT_STATUS spiTsferInProgress(SPI_MODULE module) {
 
     // The spiBufInfo length is >0 during a poll or interrupt transfer.
-    if (spiBufInfo[module-1].len != 0) return 1;
+    if (spiBufInfo[module-1].len != 0) return EXIT_TSFER_IN_PROGRESS;
 
     // For DMA transfers, check if the BSY flag is set
-    if (SPI_BUSY == getRegVal16(spiGetBaseAdr(module) + R_SPI_SR_OFF, N_BSY, S_BSY)) return 1;
+    if (SPI_BUSY == getRegVal16(spiGetBaseAdr(module) + R_SPI_SR_OFF, N_BSY, S_BSY)) return EXIT_TSFER_IN_PROGRESS;
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 
@@ -662,13 +662,20 @@ void spi1_handler() {
         // Check if transfer is done
         if (spiBufInfo[0].pos == spiBufInfo[0].len) {
 
-            if (spiGetCrcMode(1) == SPI_CRC_EN) {
-                setRegVal(spiGetBaseAdr(1)+R_SPI_CR1_OFF, SPI_FRXTH_1_2, N_FRXTH, S_FRXTH);
-            }
             spiBufInfo[0].pos = 0;
             spiBufInfo[0].len = 0;
             spiBufInfo[0].rxBuf = NULL;
             spiBufInfo[0].txBuf = NULL;
+
+            // Set the RXNE buf based on the last CRC value
+            if (spiGetCrcMode(1) == SPI_CRC_EN) {
+                if (spiGetFrameLength(1) == 16 || spiGetCrcLength(1) == SPI_CRC_LEN_16) {
+                    setRegVal(spiGetBaseAdr(1)+R_SPI_CR1_OFF, SPI_FRXTH_1_2, N_FRXTH, S_FRXTH);
+                } else {
+                    setRegVal(spiGetBaseAdr(1)+R_SPI_CR1_OFF, SPI_FRXTH_1_4, N_FRXTH, S_FRXTH);
+                }
+            }
+    
             return;
         }
 

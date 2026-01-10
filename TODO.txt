@@ -53,8 +53,6 @@ TODO LIST
 - DMA Interrupt Enable
 
 ----- SPI -----
-- Error Checking
-- SPI Error Codes
 - CRC feature enable
 - Interrupt Enable is causing an error in the bootloader when programming
 - Build option if no DMA being built
