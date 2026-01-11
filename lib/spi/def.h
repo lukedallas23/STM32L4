@@ -148,7 +148,7 @@ typedef enum {
 #define     S_DS            4
 #define     S_TXEIE         1
 #define     S_RXNEIE        1
-#define     S_ERROE         1
+#define     S_ERRIE         1
 #define     S_FRF           1
 #define     S_NSSP          1
 #define     S_SSOE          1

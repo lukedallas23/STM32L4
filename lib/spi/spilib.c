@@ -55,28 +55,31 @@ uint32_t spiGetBaseAdr(SPI_MODULE module) {
 EXIT_STATUS spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PIN sclk, uint8_t spiMode) {
 
     // Check if module is supported and configure pins
-    switch (module) {
+    /*switch (module) {
         case 1:
             if (moduleSupported(SPI1) == EXIT_UNSUPPORTED || pinFunctionCheck(mosi, SPI1_MOSI) == EXIT_UNSUPPORTED ||
                 pinFunctionCheck(miso, SPI1_MISO) == EXIT_UNSUPPORTED || pinFunctionCheck(sclk, SPI1_SCK) == EXIT_UNSUPPORTED) 
                 {
                     return EXIT_UNSUPPORTED;
                 }
+            break;
         case 2:
             if (moduleSupported(SPI2) == EXIT_UNSUPPORTED || pinFunctionCheck(mosi, SPI2_MOSI) == EXIT_UNSUPPORTED ||
                 pinFunctionCheck(miso, SPI2_MISO) == EXIT_UNSUPPORTED || pinFunctionCheck(sclk, SPI2_SCK) == EXIT_UNSUPPORTED) 
                 {
                     return EXIT_UNSUPPORTED;
                 }
+            break;
         case 3:
             if (moduleSupported(SPI3) == EXIT_UNSUPPORTED || pinFunctionCheck(mosi, SPI3_MOSI) == EXIT_UNSUPPORTED ||
                 pinFunctionCheck(miso, SPI3_MISO) == EXIT_UNSUPPORTED || pinFunctionCheck(sclk, SPI3_SCK) == EXIT_UNSUPPORTED) 
                 {
                     return EXIT_UNSUPPORTED;
                 }
+            break;
         default:
             return EXIT_UNSUPPORTED;
-    }
+    }*/
 
     // Set Pins as alternate functions
     gpioPinInit(mosi, GPIO_MODE_ALT_FN);
@@ -446,13 +449,13 @@ void spiDisableModule(SPI_MODULE module) {
 */
 void spiEnableModule(SPI_MODULE module) {
 
-    setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_MODULE_EN, N_SPE, S_SPE);
-
     if (spiGetFrameLength(module) > 8) {
         setRegVal(spiGetBaseAdr(module)+R_SPI_CR2_OFF, SPI_FRXTH_1_2, N_FRXTH, S_FRXTH);
     } else {
         setRegVal(spiGetBaseAdr(module)+R_SPI_CR2_OFF, SPI_FRXTH_1_4, N_FRXTH, S_FRXTH);
     }
+
+    setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_MODULE_EN, N_SPE, S_SPE);
 
 }
 
@@ -519,7 +522,7 @@ SPI_BR_MODE getBaudRate(SPI_MODULE module) {
 */
 EXIT_STATUS spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData) {
 
-    if (spiTsferInProgress(module) == EXIT_TSFER_IN_PROGRESS) return EXIT_TSFER_IN_PROGRESS;
+    //if (spiTsferInProgress(module) == EXIT_TSFER_IN_PROGRESS) return EXIT_TSFER_IN_PROGRESS;
 
     DMA_REQ dmaTx;
     DMA_REQ dmaRx;
@@ -532,8 +535,8 @@ EXIT_STATUS spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendDat
     setRegVal16(spiBase+R_SPI_CR2_OFF, SPI_RX_BUF_DMA_EN, N_RXDMAEN, S_RXDMAEN);
 
     // Setup the DMA for SPI
-    dmaTsferSetup(dmaTx, DMA_MEM_TO_PERPH, (uint32_t)sendData, R_SPI1_BASE+R_SPI_DR_OFF);
-    dmaTsferSetup(dmaRx, DMA_PERPH_TO_MEM, spiGetBaseAdr(module)+R_SPI_DR_OFF, (uint32_t)recData);
+    dmaTsferSetup(dmaTx, DMA_MEM_TO_PERPH, (uint32_t)sendData, spiBase+R_SPI_DR_OFF);
+    dmaTsferSetup(dmaRx, DMA_PERPH_TO_MEM, spiBase+R_SPI_DR_OFF, (uint32_t)recData);
     dmaSetMemInc(dmaTx, DMA_MINC_EN, DMA_PINC_DIS);
     dmaSetMemInc(dmaRx, DMA_MINC_EN, DMA_PINC_DIS);
 
@@ -654,7 +657,7 @@ void spi1_handler() {
         if (spiBufInfo[0].pos == spiBufInfo[0].len) {
             uint16_t garbage = getRegVal16(spiGetBaseAdr(1)+R_SPI_CR1_OFF, 0, 16);
             setRegVal(spiGetBaseAdr(1)+R_SPI_CR1_OFF, SPI_CRC_NEXT_TX, N_CRCNEXT, S_CRCNEXT);
-            return;
+            goto spiErrorCheck;
         }
 
         spiRxFrame(1);
@@ -676,7 +679,7 @@ void spi1_handler() {
                 }
             }
     
-            return;
+            goto spiErrorCheck;
         }
 
         spiTxFrame(1);
@@ -686,8 +689,24 @@ void spi1_handler() {
             setRegVal(spiGetBaseAdr(1)+R_SPI_CR1_OFF, SPI_CRC_NEXT_CRC, N_CRCNEXT, S_CRCNEXT);
         }
 
-        return;
     }
+
+  spiErrorCheck:
+    if (getRegVal16(R_SPI1_BASE + R_SPI_SR_OFF, N_RXNE, S_RXNE) &&
+        getRegVal16(R_SPI1_BASE + R_SPI_CR2_OFF, N_OVR, S_OVR))
+    {
+    }
+
+    if (getRegVal16(R_SPI1_BASE + R_SPI_SR_OFF, N_RXNE, S_RXNE) &&
+        getRegVal16(R_SPI1_BASE + R_SPI_CR2_OFF, N_MODF, S_MODF))
+    {
+    }
+
+    if (getRegVal16(R_SPI1_BASE + R_SPI_SR_OFF, N_RXNE, S_RXNE) &&
+        getRegVal16(R_SPI1_BASE + R_SPI_CR2_OFF, N_CRCERR, S_CRCERR))
+    {
+    }
+
 
 }
 
