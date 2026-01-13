@@ -522,14 +522,26 @@ SPI_BR_MODE getBaudRate(SPI_MODULE module) {
 */
 EXIT_STATUS spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendData, void *recData) {
 
-    //if (spiTsferInProgress(module) == EXIT_TSFER_IN_PROGRESS) return EXIT_TSFER_IN_PROGRESS;
+    if (spiTsferInProgress(module) == EXIT_TSFER_IN_PROGRESS) return EXIT_TSFER_IN_PROGRESS;
 
     DMA_REQ dmaTx;
     DMA_REQ dmaRx;
     uint32_t spiBase = spiGetBaseAdr(module);
 
+    switch (module) {
+        case 1:
+            dmaTx = DMA1_SPI1_TX;
+            dmaRx = DMA1_SPI1_RX; break;
+        case 2:
+            dmaTx = DMA_SPI2_TX;
+            dmaRx = DMA_SPI2_RX; break;
+        case 3:
+            dmaTx = DMA_SPI3_TX;
+            dmaRx = DMA_SPI3_RX; break;
+        default:
+            break;
+    }
     spiDisableModule(module);
-
     setRegVal(spiGetBaseAdr(module)+R_SPI_CR2_OFF, SPI_RXNE_INT_MASKED, N_RXNEIE, S_RXNEIE);
 
     setRegVal16(spiBase+R_SPI_CR2_OFF, SPI_RX_BUF_DMA_EN, N_RXDMAEN, S_RXDMAEN);
@@ -549,7 +561,7 @@ EXIT_STATUS spiSendDataDma(SPI_MODULE module, unsigned int bufLen, void *sendDat
     }
     
     setRegVal16(spiBase+R_SPI_CR2_OFF, SPI_TX_BUF_DMA_EN, N_TXDMAEN, S_TXDMAEN);
-    
+
     spiEnableModule(module);
     
     return EXIT_SUCCESS;
@@ -642,132 +654,92 @@ SPI_CRC_LEN_MODE spiGetCrcLength(SPI_MODULE module) {
 
 
 /*
-    IRQ Handler for SPI1
+    IRQ Handler for SPI
 */
-void spi1_handler() {
+void spi_handler() {
 
-    ClearPendingIRQ(P_INT_SPI1);
+    // Check which SPI IRQ is active, that is the ISR that needs to be serviced
+    uint8_t module;
+    uint32_t baseAdr;
+
+    if (isIRQActive(P_INT_SPI1)) module = 1;
+    else if (isIRQActive(P_INT_SPI2)) module = 2;
+    else if (isIRQActive(P_INT_SPI3)) module = 3;
+    else return;
+
+    baseAdr = spiGetBaseAdr(module);
+
+    uint16_t errReg = getRegVal16(baseAdr + R_SPI_SR_OFF, 0, 16);
 
     // If Receive Flag is active
-    if (getRegVal16(R_SPI1_BASE + R_SPI_SR_OFF, N_RXNE, S_RXNE) &&
-        getRegVal16(R_SPI1_BASE + R_SPI_CR2_OFF, N_RXNEIE, S_RXNEIE))
+    if (getRegVal16(baseAdr + R_SPI_SR_OFF, N_RXNE, S_RXNE) &&
+        getRegVal16(baseAdr + R_SPI_CR2_OFF, N_RXNEIE, S_RXNEIE))
     {
 
         // If receiving data and tsfer is complete, then a CRC is what's received
-        if (spiBufInfo[0].pos == spiBufInfo[0].len) {
-            uint16_t garbage = getRegVal16(spiGetBaseAdr(1)+R_SPI_CR1_OFF, 0, 16);
-            setRegVal(spiGetBaseAdr(1)+R_SPI_CR1_OFF, SPI_CRC_NEXT_TX, N_CRCNEXT, S_CRCNEXT);
+        if (spiBufInfo[module-1].pos == spiBufInfo[module-1].len) {
+            uint16_t garbage = getRegVal16(baseAdr+R_SPI_CR1_OFF, 0, 16);
+            setRegVal(baseAdr+R_SPI_CR1_OFF, SPI_CRC_NEXT_TX, N_CRCNEXT, S_CRCNEXT);
             goto spiErrorCheck;
         }
 
-        spiRxFrame(1);
+        spiRxFrame(module);
 
         // Check if transfer is done
-        if (spiBufInfo[0].pos == spiBufInfo[0].len) {
+        if (spiBufInfo[module-1].pos == spiBufInfo[module-1].len) {
 
-            spiBufInfo[0].pos = 0;
-            spiBufInfo[0].len = 0;
-            spiBufInfo[0].rxBuf = NULL;
-            spiBufInfo[0].txBuf = NULL;
+            spiBufInfo[module-1].pos = 0;
+            spiBufInfo[module-1].len = 0;
+            spiBufInfo[module-1].rxBuf = NULL;
+            spiBufInfo[module-1].txBuf = NULL;
 
             // Set the RXNE buf based on the last CRC value
-            if (spiGetCrcMode(1) == SPI_CRC_EN) {
-                if (spiGetFrameLength(1) == 16 || spiGetCrcLength(1) == SPI_CRC_LEN_16) {
-                    setRegVal(spiGetBaseAdr(1)+R_SPI_CR1_OFF, SPI_FRXTH_1_2, N_FRXTH, S_FRXTH);
+            if (spiGetCrcMode(module) == SPI_CRC_EN) {
+                if (spiGetFrameLength(module) == 16 || spiGetCrcLength(module) == SPI_CRC_LEN_16) {
+                    setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_FRXTH_1_2, N_FRXTH, S_FRXTH);
                 } else {
-                    setRegVal(spiGetBaseAdr(1)+R_SPI_CR1_OFF, SPI_FRXTH_1_4, N_FRXTH, S_FRXTH);
+                    setRegVal(spiGetBaseAdr(module)+R_SPI_CR1_OFF, SPI_FRXTH_1_4, N_FRXTH, S_FRXTH);
                 }
             }
     
             goto spiErrorCheck;
         }
 
-        spiTxFrame(1);
+        spiTxFrame(module);
 
         // Check if CRC should be sent
-        if (spiBufInfo[0].pos + 1 == spiBufInfo[0].len && spiGetCrcMode(1) == SPI_CRC_EN) {
-            setRegVal(spiGetBaseAdr(1)+R_SPI_CR1_OFF, SPI_CRC_NEXT_CRC, N_CRCNEXT, S_CRCNEXT);
+        if (spiBufInfo[0].pos + 1 == spiBufInfo[module-1].len && spiGetCrcMode(module) == SPI_CRC_EN) {
+            setRegVal(baseAdr+R_SPI_CR1_OFF, SPI_CRC_NEXT_CRC, N_CRCNEXT, S_CRCNEXT);
         }
 
     }
 
   spiErrorCheck:
-    if (getRegVal16(R_SPI1_BASE + R_SPI_SR_OFF, N_RXNE, S_RXNE) &&
-        getRegVal16(R_SPI1_BASE + R_SPI_CR2_OFF, N_OVR, S_OVR))
+    if (getRegVal16((uint32_t)&errReg, N_OVR, S_OVR) &&
+        getRegVal16(baseAdr + R_SPI_CR2_OFF, N_ERRIE, S_ERRIE))
     {
-    }
-
-    if (getRegVal16(R_SPI1_BASE + R_SPI_SR_OFF, N_RXNE, S_RXNE) &&
-        getRegVal16(R_SPI1_BASE + R_SPI_CR2_OFF, N_MODF, S_MODF))
-    {
-    }
-
-    if (getRegVal16(R_SPI1_BASE + R_SPI_SR_OFF, N_RXNE, S_RXNE) &&
-        getRegVal16(R_SPI1_BASE + R_SPI_CR2_OFF, N_CRCERR, S_CRCERR))
-    {
-    }
-
-
-}
-
-
-/*
-    IRQ Handler for SPI2
-*/
-void spi2_handler() {
-
-    ClearPendingIRQ(P_INT_SPI2);
-
-    // If Receive Flag is active
-    if (getRegVal16(R_SPI2_BASE + R_SPI_SR_OFF, N_RXNE, S_RXNE) &&
-        getRegVal16(R_SPI2_BASE + R_SPI_CR2_OFF, N_RXNEIE, S_RXNEIE))
-    {
-        spiRxFrame(2);
-
-        // Check if transfer is done
-        if (spiBufInfo[1].pos == spiBufInfo[1].len) {
-            spiBufInfo[1].pos = 0;
-            spiBufInfo[1].len = 0;
-            spiBufInfo[1].rxBuf = NULL;
-            spiBufInfo[1].txBuf = NULL;
-            return;
+        uint16_t ovrData;
+        if (spiGetFrameLength(1) <= 8) {
+            ovrData = getRegVal8(baseAdr+R_SPI_SR_OFF, 0, 8);
+        } else {
+            ovrData = getRegVal16(baseAdr+R_SPI_SR_OFF, 0, 16);
         }
+        getRegVal16(baseAdr+R_SPI_DR_OFF, 0, 16);
 
-        spiTxFrame(2);
-
-        return;
     }
 
-}
-
-
-/*
-    IRQ Handler for SPI3
-*/
-void spi3_handler() {
-
-    ClearPendingIRQ(P_INT_SPI3);
-
-    // If Receive Flag is active
-    if (getRegVal16(R_SPI3_BASE + R_SPI_SR_OFF, N_RXNE, S_RXNE) &&
-        getRegVal16(R_SPI3_BASE + R_SPI_CR2_OFF, N_RXNEIE, S_RXNEIE))
+    if (getRegVal16((uint32_t)&errReg, N_MODF, S_MODF) &&
+        getRegVal16(baseAdr + R_SPI_CR2_OFF, N_ERRIE, S_ERRIE))
     {
-        spiRxFrame(3);
+        getRegVal16(baseAdr+R_SPI_DR_OFF, 0, 16);
+        setRegVal16(baseAdr+R_SPI_CR1_OFF, SPI_MASTER_MODE, N_MSTR, S_MSTR);
+        spiEnableModule(1);
+    }
 
-        // Check if transfer is done
-        if (spiBufInfo[2].pos == spiBufInfo[2].len) {
-            spiBufInfo[2].pos = 0;
-            spiBufInfo[2].len = 0;
-            spiBufInfo[2].rxBuf = NULL;
-            spiBufInfo[2].txBuf = NULL;
-            return;
-        }
-
-        spiTxFrame(3);
-
-        return;
+    if (getRegVal16((uint32_t)&errReg, N_CRCERR, S_MODF) &&
+        getRegVal16(baseAdr + R_SPI_CR2_OFF, N_ERRIE, S_ERRIE))
+    {
+        setRegVal16(baseAdr+R_SPI_SR_OFF, SPI_NO_CRC_ERROR, N_CRCERR, S_CRCERR);
     }
 
 }
-
-

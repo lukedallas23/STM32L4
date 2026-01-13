@@ -1,5 +1,6 @@
 TODO LIST
 --- GENERAL ---
+- Gitignore
 - Library Headers Defining Features
 - Makefile for building
 - Create a stdlib folder with interruptTable and reg
@@ -53,22 +54,11 @@ TODO LIST
 - DMA Interrupt Enable
 
 ----- SPI -----
-- CRC feature enable
-- Interrupt Enable is causing an error in the bootloader when programming
-- Build option if no DMA being built
-- Could put all ISR's into one
+- Build option if no DMA, CRC, etc. being built
 - Need new methods for
   1. Slave mode
   2. Unidirectional mode
-- FRE Handler
-- OVR Handler
-- MODF Handler
-- CRCERR Handler
-- Right now DMA and Poll modes disable interrupts, but it should only disable
-  the interrupt for RXNE.
-- Need SPI ISR to be the same for each module.
-- Need to set RXNE buffer full bit at the start of a transfer.
-- CRC for 8/8 Mode need buffer flag set to 8 or can it stay at 16?
+- (LOW PRI) TI Mode
 
 ----- RCC -----
 - Error Checking

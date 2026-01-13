@@ -81,3 +81,17 @@ void SetPriorityIRQ(IRQn_Type IRQn, uint32_t priority) {
 uint32_t GetPriorityIRQ(IRQn_Type IRQn) {
     return (*(uint32_t*)(R_NVIC_IPR + 4*(IRQn/4)) >> (8*(IRQn % 4) + 4)) & 0xF;
 }
+
+
+/*
+    Checks if an interrupt is active.
+
+    @param  IRQn        Interrupt number to check active status of.
+
+    @retval `1` if active
+    @retval `0` if not active.
+*/
+uint32_t isIRQActive(IRQn_Type IRQn) {
+
+    return (*(uint32_t*)(R_NVIC_IABR + 4*(IRQn/32)) >> (IRQn % 32)) & 1;
+}

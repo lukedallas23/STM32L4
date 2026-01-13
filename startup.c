@@ -52,15 +52,13 @@ void i2c1_ev_handler() __attribute__((weak, alias("default_handler")));
 void i2c1_er_handler() __attribute__((weak, alias("default_handler")));
 void i2c2_ev_handler() __attribute__((weak, alias("default_handler")));
 void i2c2_er_handler() __attribute__((weak, alias("default_handler")));
-void spi1_handler() __attribute__((weak, alias("default_handler")));
-void spi2_handler() __attribute__((weak, alias("default_handler")));
+void spi_handler() __attribute__((weak, alias("default_handler")));
 void usart1_handler() __attribute__((weak, alias("default_handler")));
 void usart2_handler() __attribute__((weak, alias("default_handler")));
 void usart3_handler() __attribute__((weak, alias("default_handler")));
 void exti15_10_handler() __attribute__((weak, alias("default_handler")));
 void rtc_alarm_handler() __attribute__((weak, alias("default_handler")));
 void sdmmc1_handler() __attribute__((weak, alias("default_handler")));
-void spi3_handler() __attribute__((weak, alias("default_handler")));
 void uart4_handler() __attribute__((weak, alias("default_handler")));
 void tim6_dacunder_handler() __attribute__((weak, alias("default_handler")));
 void tim7_handler() __attribute__((weak, alias("default_handler")));
@@ -147,8 +145,8 @@ uint32_t isr_vector[ISR_VECTOR_SIZE] __attribute__((section(".isr_vector"))) = {
     (uint32_t)&i2c1_er_handler,
     (uint32_t)&i2c2_ev_handler,
     (uint32_t)&i2c2_er_handler,
-    (uint32_t)&spi1_handler,
-    (uint32_t)&spi2_handler,
+    (uint32_t)&spi_handler,
+    (uint32_t)&spi_handler,
     (uint32_t)&usart1_handler,
     (uint32_t)&usart2_handler,
     (uint32_t)&usart3_handler,
@@ -163,7 +161,7 @@ uint32_t isr_vector[ISR_VECTOR_SIZE] __attribute__((section(".isr_vector"))) = {
     0,
     (uint32_t)&sdmmc1_handler,
     0,
-    (uint32_t)&spi3_handler,
+    (uint32_t)&spi_handler,
     (uint32_t)&uart4_handler,
     0,
     (uint32_t)&tim6_dacunder_handler,

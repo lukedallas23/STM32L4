@@ -31,7 +31,7 @@ int main() {
     gpioSetPinLevel(GPIO_A4, GPIO_VAL_HIGH);
     */
     gpioSetPinLevel(GPIO_A4, GPIO_VAL_LOW);
-    spiSendDataDma(1, 4, data, &rec[4]);
+    spiSendDataInt(1, 4, data, &rec[4]);
 
     while (1) {
         
