@@ -30,9 +30,11 @@ EXIT_STATUS pinFunctionCheck(PIN pin, FUNCTION fn) {
     
     if (pinSupported(pin) != EXIT_SUCCESS) return EXIT_UNSUPPORTED;
 
-    if (fn & 0xFF == pin || (fn >> 8) & 0xFF == pin  ||
-       (fn >> 16) & 0xFF == pin || (fn >> 24) & 0xFF == pin) {
-    
+    if ((uint8_t)(fn & 0xFF) == pin || 
+        (uint8_t)((fn >> 8) & 0xFF) == pin ||
+        (uint8_t)((fn >> 16) & 0xFF) == pin ||
+        (uint8_t)((fn >> 24) & 0xFF) == pin) 
+    {
         return EXIT_SUCCESS;
     }
 

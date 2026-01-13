@@ -55,10 +55,10 @@ uint32_t spiGetBaseAdr(SPI_MODULE module) {
 EXIT_STATUS spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PIN sclk, uint8_t spiMode) {
 
     // Check if module is supported and configure pins
-    /*switch (module) {
+    switch (module) {
         case 1:
-            if (moduleSupported(SPI1) == EXIT_UNSUPPORTED || pinFunctionCheck(mosi, SPI1_MOSI) == EXIT_UNSUPPORTED ||
-                pinFunctionCheck(miso, SPI1_MISO) == EXIT_UNSUPPORTED || pinFunctionCheck(sclk, SPI1_SCK) == EXIT_UNSUPPORTED) 
+            if ((moduleSupported(SPI1) == EXIT_UNSUPPORTED) || (pinFunctionCheck(mosi, SPI1_MOSI) == EXIT_UNSUPPORTED) ||
+                (pinFunctionCheck(miso, SPI1_MISO) == EXIT_UNSUPPORTED) || (pinFunctionCheck(sclk, SPI1_SCK) == EXIT_UNSUPPORTED)) 
                 {
                     return EXIT_UNSUPPORTED;
                 }
@@ -79,7 +79,7 @@ EXIT_STATUS spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso,
             break;
         default:
             return EXIT_UNSUPPORTED;
-    }*/
+    }
 
     // Set Pins as alternate functions
     gpioPinInit(mosi, GPIO_MODE_ALT_FN);
@@ -143,6 +143,9 @@ EXIT_STATUS spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso,
     // RXNE event for 1/4th full (8 bit)
     setRegVal(spiGetBaseAdr(module) + R_SPI_CR2_OFF, SPI_FRXTH_1_4, N_FRXTH, S_FRXTH);
 
+    // Enable Error Interrupts
+    setRegVal(spiGetBaseAdr(module) + R_SPI_CR2_OFF, SPI_ERRIE_INT_EN, N_ERRIE, S_ERRIE);
+    
     return EXIT_SUCCESS;
 }
 
