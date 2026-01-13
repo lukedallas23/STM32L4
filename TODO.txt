@@ -1,14 +1,12 @@
 TODO LIST
 --- GENERAL ---
-- Gitignore
 - Library Headers Defining Features
-- Makefile for building
+- Update Makefile to be more robust 
 - Create a stdlib folder with interruptTable and reg
 - Update include file path
 - Library File Organization
 - Add support template
 - Pindef folder for other processors
-- Figure Nested and Extended Interrupts and Events Controllers
 - Device (like W5500 support)
 - Modules for other functionallity
     1. Power Control (PWR, ch5)
@@ -52,6 +50,7 @@ TODO LIST
 - DMA Error Checking
     * Function calls should all check if startup has happened and there is no TIP.
 - DMA Interrupt Enable
+- Change Error Checks to STD errors
 
 ----- SPI -----
 - Build option if no DMA, CRC, etc. being built
