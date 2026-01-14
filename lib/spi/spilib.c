@@ -57,21 +57,21 @@ EXIT_STATUS spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso,
     // Check if module is supported and configure pins
     switch (module) {
         case 1:
-            if ((moduleSupported(SPI1) == EXIT_UNSUPPORTED) || (pinFunctionCheck(mosi, SPI1_MOSI) == EXIT_UNSUPPORTED) ||
+            if ((moduleSupported(AF_SPI1) == EXIT_UNSUPPORTED) || (pinFunctionCheck(mosi, SPI1_MOSI) == EXIT_UNSUPPORTED) ||
                 (pinFunctionCheck(miso, SPI1_MISO) == EXIT_UNSUPPORTED) || (pinFunctionCheck(sclk, SPI1_SCK) == EXIT_UNSUPPORTED)) 
                 {
                     return EXIT_UNSUPPORTED;
                 }
             break;
         case 2:
-            if (moduleSupported(SPI2) == EXIT_UNSUPPORTED || pinFunctionCheck(mosi, SPI2_MOSI) == EXIT_UNSUPPORTED ||
+            if (moduleSupported(AF_SPI2) == EXIT_UNSUPPORTED || pinFunctionCheck(mosi, SPI2_MOSI) == EXIT_UNSUPPORTED ||
                 pinFunctionCheck(miso, SPI2_MISO) == EXIT_UNSUPPORTED || pinFunctionCheck(sclk, SPI2_SCK) == EXIT_UNSUPPORTED) 
                 {
                     return EXIT_UNSUPPORTED;
                 }
             break;
         case 3:
-            if (moduleSupported(SPI3) == EXIT_UNSUPPORTED || pinFunctionCheck(mosi, SPI3_MOSI) == EXIT_UNSUPPORTED ||
+            if (moduleSupported(AF_SPI3) == EXIT_UNSUPPORTED || pinFunctionCheck(mosi, SPI3_MOSI) == EXIT_UNSUPPORTED ||
                 pinFunctionCheck(miso, SPI3_MISO) == EXIT_UNSUPPORTED || pinFunctionCheck(sclk, SPI3_SCK) == EXIT_UNSUPPORTED) 
                 {
                     return EXIT_UNSUPPORTED;
@@ -91,23 +91,23 @@ EXIT_STATUS spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso,
         case 1:
             rccReset(RCC_RST_SPI1);
             rccSetClock(RCC_CLK_SPI1, RCC_CLOCK_EN);
-            gpioSetAltFn(mosi, SPI1);
-            gpioSetAltFn(miso, SPI1);
-            gpioSetAltFn(sclk, SPI1); 
+            gpioSetAltFn(mosi, AF_SPI1);
+            gpioSetAltFn(miso, AF_SPI1);
+            gpioSetAltFn(sclk, AF_SPI1); 
             EnableIRQ(P_INT_SPI1); break;
         case 2:
             rccReset(RCC_RST_SPI2);
             rccSetClock(RCC_CLK_SPI2, RCC_CLOCK_EN);
-            gpioSetAltFn(mosi, SPI2);
-            gpioSetAltFn(miso, SPI2);
-            gpioSetAltFn(sclk, SPI2); 
+            gpioSetAltFn(mosi, AF_SPI2);
+            gpioSetAltFn(miso, AF_SPI2);
+            gpioSetAltFn(sclk, AF_SPI2); 
             EnableIRQ(P_INT_SPI2); break;
         case 3:
             rccReset(RCC_RST_SPI3);
             rccSetClock(RCC_CLK_SPI3, RCC_CLOCK_EN);
-            gpioSetAltFn(mosi, SPI3);
-            gpioSetAltFn(miso, SPI3);
-            gpioSetAltFn(sclk, SPI3);
+            gpioSetAltFn(mosi, AF_SPI3);
+            gpioSetAltFn(miso, AF_SPI3);
+            gpioSetAltFn(sclk, AF_SPI3);
             EnableIRQ(P_INT_SPI3); break;
         default:
             return EXIT_UNKNOWN; break;

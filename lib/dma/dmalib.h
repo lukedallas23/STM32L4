@@ -20,13 +20,6 @@ typedef enum {
     DMA_PERPH_TO_PERPH
 } DMA_MODE;
 
-typedef enum {
-    DMA_NO_ERROR,
-    DMA_IN_PROGRESS,
-    DMA_ERROR
-} DMA_STATUS;
-
-
 
 #define     _DMA_MOD(X) ((X >> 8) & 0xF)
 #define     _DMA_CHAN(X) ((X >> 4) & 0xF)
@@ -191,7 +184,7 @@ void dmaSetChannel(DMA_REQ req);
     dmaGetStatus  
 
 */
-DMA_STATUS dmaTsferSetup(DMA_REQ req, DMA_MODE mode, uint32_t fromAddr, uint32_t toAddr);
+EXIT_STATUS dmaTsferSetup(DMA_REQ req, DMA_MODE mode, uint32_t fromAddr, uint32_t toAddr);
 
 
 /*  TODO TODO TODO TODO MEM2MEM
@@ -245,7 +238,7 @@ void dmaSetCircMode(DMA_REQ req, DMA_CIRC_MODE circMode);
     @retval `DMA_ERROR` There was an error for the requested peripheral  
 
 */
-DMA_STATUS dmaGetStatus(DMA_REQ req);
+EXIT_STATUS dmaGetStatus(DMA_REQ req);
 
 
 /*

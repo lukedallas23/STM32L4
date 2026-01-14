@@ -14,7 +14,8 @@ typedef enum {
     EXIT_BAD_PARAMATER          = 1,
     EXIT_UNSUPPORTED            = 2,
     EXIT_TSFER_IN_PROGRESS      = 3,
-    EXIT_UNKNOWN                = 4
+    EXIT_ERROR                  = 4,
+    EXIT_UNKNOWN                = 5
 
 } EXIT_STATUS;
 

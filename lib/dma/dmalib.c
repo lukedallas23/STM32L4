@@ -105,7 +105,7 @@ void dmaSetChannel(DMA_REQ req) {
     dmaGetStatus  
 
 */
-DMA_STATUS dmaTsferSetup(DMA_REQ req, DMA_MODE mode, uint32_t fromAddr, uint32_t toAddr) {
+EXIT_STATUS dmaTsferSetup(DMA_REQ req, DMA_MODE mode, uint32_t fromAddr, uint32_t toAddr) {
 
     // Enable DMA clock
     switch (_DMA_MOD(req)) {
@@ -119,12 +119,12 @@ DMA_STATUS dmaTsferSetup(DMA_REQ req, DMA_MODE mode, uint32_t fromAddr, uint32_t
 
     // Is there a transfer in progress on the channel
     if (getRegVal(dmaGetChanAdr(req, R_DMA_CNDTR_OFF), N_NDT, S_NDT) > 0) {
-        return DMA_IN_PROGRESS;
+        return EXIT_TSFER_IN_PROGRESS;
     }
 
     // Is the error bit set on the channel
     if (getRegVal(dmaGetBaseAdr(_DMA_MOD(req))+R_DMA_ISR_OFF, N_TEIF1 + 4*(_DMA_CHAN(req)-1), S_TEIF) == DMA_TE_EVENT) {
-        return DMA_ERROR;
+        return EXIT_ERROR;
     }
 
     dmaResetChannel(req);
@@ -150,7 +150,7 @@ DMA_STATUS dmaTsferSetup(DMA_REQ req, DMA_MODE mode, uint32_t fromAddr, uint32_t
         setRegVal(dmaGetChanAdr(req, R_DMA_CMAR_OFF), fromAddr, N_MA, S_MA);
     }
     setRegVal(dmaGetChanAdr(req, R_DMA_CCR_OFF), DMA_MINC_EN, N_MINC, S_MINC);
-    return DMA_NO_ERROR;
+    return EXIT_SUCCESS;
 }
 
 /*  TODO TODO TODO TODO MEM2MEM
@@ -219,7 +219,7 @@ void dmaSetCircMode(DMA_REQ req, DMA_CIRC_MODE circMode) {
     @retval `DMA_ERROR` There was an error for the requested peripheral  
 
 */
-DMA_STATUS dmaGetStatus(DMA_REQ req) {
+EXIT_STATUS dmaGetStatus(DMA_REQ req) {
 
     // Check if the error bit is set in the ISR (and clear it)
     if (getRegVal(
@@ -241,7 +241,7 @@ DMA_STATUS dmaGetStatus(DMA_REQ req) {
                 N_CTEIF1 + 4*(_DMA_CHAN(req)-1),
                 S_CTEIF
             );
-            return DMA_ERROR;
+            return EXIT_ERROR;
         }
     }
 
@@ -256,12 +256,12 @@ DMA_STATUS dmaGetStatus(DMA_REQ req) {
             N_NDT,
             S_NDT) > 0
         ) {
-            return DMA_IN_PROGRESS;
+            return EXIT_TSFER_IN_PROGRESS;
         }
     }
 
     // If ERR bit is not set, and there is no tsfer in progress.
-    return DMA_NO_ERROR;
+    return EXIT_SUCCESS;
 
 }
 
