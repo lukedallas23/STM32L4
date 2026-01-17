@@ -40,7 +40,7 @@ volatile extern SPI_BUFFER_INFO spiBufInfo[NUM_SPI_MODULE];
 
 
 /*
-    SPI IRQ handlers.
+    SPI IRQ handler.
 */
 void spi_handler();
 

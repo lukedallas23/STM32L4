@@ -139,6 +139,7 @@ typedef uint8_t MODULE;
 #define     AF_I2C1             4
 #define     AF_I2C2             FN_NOT_SUPPORTED
 #define     AF_I2C3             4
+#define     AF_I2C4             FN_NOT_SUPPORTED
 #define     AF_SPI1             5
 #define     AF_SPI2             FN_NOT_SUPPORTED
 #define     AF_SPI3             6
@@ -357,6 +358,10 @@ typedef uint8_t MODULE;
 #define     SPI2_NSS        0
 #define     SPI2_MISO       0
 #define     SPI2_MOSI       0
+#define     I2C2_SDA        0
+#define     I2C2_SCL        0
+#define     I2C4_SDA        0
+#define     I2C4_SCL        0
 
 
 /*
