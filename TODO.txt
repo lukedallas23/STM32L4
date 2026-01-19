@@ -63,6 +63,8 @@ TODO LIST
 - Error Checking
 - RCC is very feature rich, need to go though and create function to change
   those features. Only have CLK enable/disable and RESET module implemented.
+- Clock frequencies are lacking, need updating.
+- Need functions to change peripheral clocks
 
 ----- GPIO ----
 - Error Checking

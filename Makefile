@@ -18,6 +18,6 @@ $(objects): %.o: %.c
 	$(CC) $(CFLAGS) -c $^ -o $@
 
 clean:
+	rm main.elf
 	rm $(objects)
-	rm -f *.o
 	

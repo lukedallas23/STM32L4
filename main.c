@@ -2,7 +2,7 @@
 #include "lib/spi/spilib.h"
 
 // Read the version register from the W5500.
-// The rec data should equal {0xFF, 0xFF, 0xFF, 0x04}
+// The rec data should equal {0xFF, 0xFF, 0xFF, 0x04}.
 
 int main() {
 

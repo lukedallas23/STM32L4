@@ -35,11 +35,236 @@
 #define     R_RCC_APB1SMENR1_OFF    0x78
 #define     R_RCC_APB1SMENR2_OFF    0x7C
 #define     R_RCC_APB2SMENR_OFF     0x80
-#define     R_RCC_CCIPR             0x88
-#define     R_RCC_BDCR              0x90
-#define     R_RCC_CSR               0x94
-#define     R_RCC_CRRCR             0x98
-#define     R_RCC_CCIPR2            0x9C
+#define     R_RCC_CCIPR_OFF         0x88
+#define     R_RCC_BDCR_OFF          0x90
+#define     R_RCC_CSR_OFF           0x94
+#define     R_RCC_CRRCR_OFF         0x98
+#define     R_RCC_CCIPR2_OFF        0x9C
+
+
+//
+// Clock Control Register (RCC_CR) definitions
+//
+#define     N_PLLSAI1RDY    27
+#define     N_PLLSAI1ON     26
+#define     N_PLLRDY        25
+#define     N_PLLON         24
+#define     N_CSSON         19
+#define     N_HSEBYP        18
+#define     N_HSERDY        17
+#define     N_HSEON         16
+#define     N_HSIASFS       11
+#define     N_HSIRDY        10
+#define     N_HSIKERON      9
+#define     N_HSION         8
+#define     N_MSIRANGE      4
+#define     N_MSIRGSEL      3
+#define     N_MSIPLLEN      2
+#define     N_MSIRDY        1
+#define     N_MSION         0
+
+#define     S_PLLSAI1RDY    1
+#define     S_PLLSAI1ON     1
+#define     S_PLLRDY        1
+#define     S_PLLON         1
+#define     S_CSSON         1
+#define     S_HSEBYP        1
+#define     S_HSERDY        1
+#define     S_HSEON         1
+#define     S_HSIASFS       1
+#define     S_HSIRDY        1
+#define     S_HSIKERON      1
+#define     S_HSION         1
+#define     S_MSIRANGE      4
+#define     S_MSIRGSEL      1
+#define     S_MSIPLLEN      1
+#define     S_MSIRDY        1
+#define     S_MSION         1
+
+typedef enum {
+    RCC_PLL_UNLOCKED    = 0,
+    RCC_PLL_LOCKED      = 1
+} RCC_PLLSAI1RDY_STATUS;
+
+typedef enum {
+    RCC_PLLSAI1_OFF     = 0,
+    RCC_PLLSAI1_ON      = 1
+} RCC_PLLSAI1_MODE;
+
+typedef enum {
+    RCC_PLL_UNLOCK      = 0,
+    RCC_PLL_LOCK        = 1
+} RCC_PLLRDY_MODE;
+
+typedef enum {
+    RCC_PLL_OFF         = 0,
+    RCC_PLL_ON          = 1
+} RCC_PLLON_MODE;
+
+typedef enum {
+    RCC_CSS_OFF         = 0,
+    RCC_CSS_ON          = 1
+} RCC_CSSON_MODE;
+
+typedef enum {
+    RCC_HSE_CRS_NOT_BYP = 0,
+    RCC_HSE_CRS_BYP     = 1
+} RCC_HSEBYP_MODE;
+
+typedef enum {
+    RCC_HSE_NOT_READY   = 0,
+    RCC_HSE_READY       = 1
+} RCC_HSERDY_STATUS;
+
+typedef enum {
+    RCC_HSE_OSC_OFF     = 0,
+    RCC_HSE_OSC_ON      = 1
+} RCC_HSEON_MODE;
+
+typedef enum {
+    RCC_HSI16_NOT_EN    = 0,
+    RCC_HSI16_EN        = 1
+} RCC_HSIASFS_MODE;
+
+typedef enum {
+    RCC_HSI16_NOT_RDY   = 0,
+    RCC_HSI16_RDY       = 1
+} RCC_HSIRDY_MODE;
+
+typedef enum {
+    RCC_HSI16_NO_EFF    = 0,
+    RCC_HSI16_FORCE_ON  = 1
+} RCC_HSIKERON_MODE;
+
+typedef enum {
+    RCC_HSI16_CLK_OFF   = 0,
+    RCC_HSI16_CLK_ON    = 1
+} RCC_HSION_MODE;
+
+typedef enum {
+    RCC_MSIRNG_100K     = 0,
+    RCC_MSIRNG_200K     = 1,
+    RCC_MSIRNG_400K     = 2,
+    RCC_MSIRNG_800K     = 3,
+    RCC_MSIRNG_1M       = 4,
+    RCC_MSIRNG_2M       = 5,
+    RCC_MSIRNG_4M       = 6,
+    RCC_MSIRNG_8M       = 7,
+    RCC_MSIRNG_16M      = 8,
+    RCC_MSIRNG_24M      = 9,
+    RCC_MSIRNG_32M      = 10,
+    RCC_MSIRNG_48M      = 11
+} RCC_MSIRANGE_MODE;
+
+typedef enum {
+    RCC_MSIRNG_RCC_CSR  = 0,
+    RCC_MSIRNG_RCC_CR   = 1
+} RCC_MSIRGSEL_MODE;
+
+typedef enum {
+    RCC_MSI_NOT_RDY     = 0,
+    RCC_MSI_RDY         = 1
+} RCC_MSIRDY_STATUS;
+
+typedef enum {
+    RCC_MSI_OSC_OFF     = 0,
+    RCC_MSI_OSC_ON      = 1
+} RCC_MSION_MODE;
+
+
+//
+// Internal Clock Sources Calibration Register (RCC_ICSCR) definitions
+//
+#define     N_HSITRIM       24
+#define     N_HSICAL        16
+#define     N_MSITRIM       8
+#define     N_MSICAL        0
+
+#define     S_HSITRIM       7
+#define     S_HSICAL        8
+#define     S_MSITRIM       8
+#define     S_MSICAL        8
+
+
+//
+// Clock Configuration Register (RCC_CFGR) definitions
+//
+#define     N_MCOPRE        28
+#define     N_MCOSEL        24
+#define     N_STOPWUCK      15
+#define     N_PPRE2         11
+#define     N_PPRE1         8
+#define     N_HPRE          4
+#define     N_SWS           2
+#define     N_SW            0
+
+#define     S_MCOPRE        3
+#define     S_MCOSEL        4
+#define     S_STOPWUCK      1
+#define     S_PPRE2         3
+#define     S_PPRE1         3
+#define     S_HPRE          4
+#define     S_SWS           2
+#define     S_SW            2
+
+typedef enum {
+    RCC_MCO_FULL        = 0,
+    RCC_MCO_1_2         = 1,
+    RCC_MCO_1_4         = 2,
+    RCC_MCO_1_8         = 3,
+    RCC_MCO_1_16        = 4
+} RCC_MCOPRE_MODE;
+
+typedef enum {
+    RCC_CLK_NO_MCO      = 0,
+    RCC_CLK_SYSCLK      = 1,
+    RCC_CLK_MSI         = 2,
+    RCC_CLK_HSI16       = 3,
+    RCC_CLK_HSE         = 4,
+    RCC_CLK_MAIN_PLL    = 5,
+    RCC_CLK_LSI         = 6,
+    RCC_CLK_LSE         = 7,
+    RCC_CLK_HSI48       = 8
+} RCC_MCOSEL_MODE;
+
+typedef enum {
+    RCC_STOPWUCK_MSI    = 0,
+    RCC_STOPWUCK_HSI16  = 1
+} RCC_STOPWUCK_MODE;
+
+typedef enum {
+    RCC_PPRE_FULL       = 0,
+    RCC_PPRE_1_2        = 4,
+    RCC_PPRE_1_4        = 5,
+    RCC_PPRE_1_8        = 6,
+    RCC_PPRE_1_16       = 7
+} RCC_PPRE_MODE;
+
+typedef enum {
+    RCC_SYSCLK_FULL     = 0,
+    RCC_SYSCLK_1_2      = 8,
+    RCC_SYSCLK_1_4      = 9,
+    RCC_SYSCLK_1_8      = 10,
+    RCC_SYSCLK_1_16     = 11,
+    RCC_SYSCLK_1_64     = 12,
+    RCC_SYSCLK_1_128    = 13,
+    RCC_SYSCLK_1_256    = 14,
+    RCC_SYSCLK_1_512    = 15,
+} RCC_HPRE_MODE;
+
+typedef enum {
+    RCC_SWS_MSI         = 0,
+    RCC_SWS_HSI16       = 1,
+    RCC_SWS_HSE         = 2,
+    RCC_SWS_PLL         = 3
+} RCC_SWS_STATUS;
+
+typedef enum {
+    RCC_SW_MSI          = 0,
+    RCC_SW_HSI16        = 1,
+    RCC_SW_HSE          = 2,
+    RCC_SW_PLL          = 3
+} RCC_SW_MODE;
 
 
 //
@@ -214,5 +439,9 @@ typedef enum {
 #define     N_FWEN          7
 #define     N_SYSCFGEN      0
 
+
+//
+// 
+//
 
 #endif

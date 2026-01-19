@@ -154,9 +154,6 @@ typedef uint8_t MODULE;
 #define     AF_COMP1            11
 #define     AF_COMP2            11
 #define     AF_SWPMI1           11
-#define     AF_COMP1            12
-#define     AF_COMP2            12
-#define     AF_SWPMI1           12
 #define     AF_SAI1             13
 #define     AF_TIM15            14
 #define     AF_TIM16            14
@@ -208,7 +205,7 @@ typedef uint8_t MODULE;
 //
 // Alternate Function 2 (TIM1/TIM2)
 //
-#define     TIM2_ETR        PA5 | (PA15 << 8)
+#define     TIM2_ETR_ALT    PA5 | (PA15 << 8)
 #define     TIM1_BKIN2      PA11
 
 
@@ -319,12 +316,11 @@ typedef uint8_t MODULE;
 //
 #define     SAI1_EXTCLK     PA0 | (PB0 << 8)
 #define     SAI1_MCLK_A     PA3
-#define     SAI1_FS_B       PA4
 #define     SAI1_SCK_A      PA8
 #define     SAI1_FS_A       PA9
 #define     SAI1_SD_A       PA10
 #define     SAI1_SD_B       PA13 | (PB5 << 8)
-#define     SAI1_FS_B       PA14 | (PB6 << 8)
+#define     SAI1_FS_B       PA4 | (PA14 << 8) | (PB6 << 16)
 #define     SAI1_SCK_B      PB3
 #define     SAI1_MCLK_B     PB4
 
