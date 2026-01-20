@@ -82,8 +82,7 @@ uint32_t spiGetBaseAdr(SPI_MODULE module);
     @retval `EXIT_BAD_PARAMATER` A entered paramater was incorrect.
 
 */
-EXIT_STATUS spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PIN sclk, uint8_t spiMode);
-
+EXIT_STATUS spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PIN sclk, uint8_t spiMode, uint32_t bitRate);
 
 
 /*
@@ -209,27 +208,28 @@ void spiEnableModule(SPI_MODULE module);
 
 
 /*
-    Sets the baud rate prescaler of a SPI module.
+    Sets the bit rate of a SPI module.
 
     @param  module      Module to set baud rate
     @param  buadRate    Baud rate prescaler
 
     @retval `EXIT_TSFER_IN_PROGRESS` Baud rate not set, transfer in progress.
     @retval `EXIT_SUCCESS` Base rate was set.
+    @retval `EXIT_UNSUPPORTED` Unsupported module.
 
 */
-EXIT_STATUS spiSetBaudRate(SPI_MODULE module, SPI_BR_MODE baudRate);
+EXIT_STATUS spiSetBitRate(SPI_MODULE module, uint32_t bitRateMax);
 
 
 /*
-    Gets the baud rate prescaler of a SPI module.
+    Gets the bit rate of a SPI module.
 
     @param  module      Module to get baud rate
     
     @retval Baud rate prescaler
 
 */
-SPI_BR_MODE getBaudRate(SPI_MODULE module);
+uint32_t spiGetBitRate(SPI_MODULE module);
 
 
 /*  

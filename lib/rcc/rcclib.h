@@ -7,6 +7,7 @@
 
 typedef uint32_t RCC_CLK;
 typedef uint32_t RCC_RST;
+typedef uint32_t RCC_PCLK;
 
 
 //
@@ -162,13 +163,13 @@ typedef enum {
     25-31  Special for SAI1, USB, RNG, ADC, and UNUSED
 
 */
-#define     RCC_CLK_MUX_USED        0x200000
-#define     RCC_CLK_AHB_PRESC       0x400000
-#define     RCC_CLK_APB1_PRESC      0x800000
-#define     RCC_CLK_APB2_PRESC      0x1000000
-#define     RCC_CLK_48MHZ           0x2000000
-#define     RCC_CLK_SYSCLK          0x4000000
-#define     RCC_CLK_CCIPR2          0x8000000
+#define     RCC_CLK_MUX_USED        0x200000U
+#define     RCC_CLK_AHB_PRESC       0x400000U
+#define     RCC_CLK_APB1_PRESC      0x800000U
+#define     RCC_CLK_APB2_PRESC      0x1000000U
+#define     RCC_CLK_48MHZ           0x2000000U
+#define     RCC_CLK_SYSCLK          0x4000000U
+#define     RCC_CLK_CCIPR2          0x8000000U
 #define     RCC_PCLK_(M0, M1, M2, M3, P) (M0|(M1<<4)|(M2<<8)|(M3<<12)|(P<<16))|RCC_CLK_MUX_USED
 #define     _PCLK_MUX0(X)       (X & 0xF)
 #define     _PCLK_MUX1(X)       ((X >> 4) & 0xF)
@@ -248,5 +249,7 @@ void rccSetClock(RCC_CLK clk, RCC_CLK_STATE clkState);
 */
 void rccReset(RCC_RST rst);
 
+uint32_t rccGetClockFreq(RCC_CLOCK_TYPE clk);
+uint32_t rccGetPerphClkFreq(RCC_PCLK pclk);
 
 #endif

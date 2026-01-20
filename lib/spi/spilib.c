@@ -52,7 +52,7 @@ uint32_t spiGetBaseAdr(SPI_MODULE module) {
     @retval `EXIT_BAD_PARAMATER` A entered paramater was incorrect.
 
 */
-EXIT_STATUS spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PIN sclk, uint8_t spiMode) {
+EXIT_STATUS spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso, GPIO_PIN sclk, uint8_t spiMode, uint32_t bitRateMax) {
 
     // Check if module is supported and configure pins
     switch (module) {
@@ -93,7 +93,7 @@ EXIT_STATUS spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso,
             rccSetClock(RCC_CLK_SPI1, RCC_CLOCK_EN);
             gpioSetAltFn(mosi, AF_SPI1);
             gpioSetAltFn(miso, AF_SPI1);
-            gpioSetAltFn(sclk, AF_SPI1); 
+            gpioSetAltFn(sclk, AF_SPI1);
             EnableIRQ(P_INT_SPI1); break;
         case 2:
             rccReset(RCC_RST_SPI2);
@@ -137,8 +137,8 @@ EXIT_STATUS spiMasterModuleInit(SPI_MODULE module, GPIO_PIN mosi, GPIO_PIN miso,
     // Change to Master Mode
     setRegVal(spiGetBaseAdr(module) + R_SPI_CR1_OFF, SPI_MASTER_MODE, N_MSTR, S_MSTR);
 
-    // Adjust baud rate to 1/16
-    setRegVal(spiGetBaseAdr(module) + R_SPI_CR1_OFF, SPI_FPCLK_1_16, N_SPI_BR, S_SPI_BR);
+    // Set bit rate
+    spiSetBitRate(module, bitRateMax);
 
     // RXNE event for 1/4th full (8 bit)
     setRegVal(spiGetBaseAdr(module) + R_SPI_CR2_OFF, SPI_FRXTH_1_4, N_FRXTH, S_FRXTH);
@@ -464,23 +464,43 @@ void spiEnableModule(SPI_MODULE module) {
 
 
 /*
-    Sets the baud rate prescaler of a SPI module.
+    Sets the bit rate of a SPI module.
 
     @param  module      Module to set baud rate
     @param  buadRate    Baud rate prescaler
 
     @retval `EXIT_TSFER_IN_PROGRESS` Baud rate not set, transfer in progress.
     @retval `EXIT_SUCCESS` Base rate was set.
+    @retval `EXIT_UNSUPPORTED` Unsupported module.
 
 */
-EXIT_STATUS spiSetBaudRate(SPI_MODULE module, SPI_BR_MODE baudRate) {
+EXIT_STATUS spiSetBitRate(SPI_MODULE module, uint32_t bitRateMax) {
 
     if (spiTsferInProgress(module) == EXIT_TSFER_IN_PROGRESS) {
         return EXIT_TSFER_IN_PROGRESS;
     }
 
+    uint32_t clkSpeed;
+    SPI_BR_MODE brPresc = SPI_FPCLK_1_2;
+    
+    switch (module) {
+        case 1:
+            clkSpeed = rccGetPerphClkFreq(RCC_PCLK_SPI1); break;
+        case 2:
+            clkSpeed = rccGetPerphClkFreq(RCC_PCLK_SPI2); break;
+        case 3:
+            clkSpeed = rccGetPerphClkFreq(RCC_PCLK_SPI3); break;
+        default: return EXIT_UNSUPPORTED;
+    }
+
+    clkSpeed /= 2;
+    while (clkSpeed > bitRateMax && brPresc != SPI_FPCLK_1_256) {
+        clkSpeed /= 2;
+        brPresc++;
+    }
+
     spiDisableModule(module);
-    setRegVal16(spiGetBaseAdr(module)+R_SPI_CR1_OFF, baudRate, N_SPI_BR, S_SPI_BR);
+    setRegVal16(spiGetBaseAdr(module)+R_SPI_CR1_OFF, brPresc, N_SPI_BR, S_SPI_BR);
     spiEnableModule(module);
     return EXIT_SUCCESS;
 
@@ -488,16 +508,28 @@ EXIT_STATUS spiSetBaudRate(SPI_MODULE module, SPI_BR_MODE baudRate) {
 
 
 /*
-    Gets the baud rate prescaler of a SPI module.
+    Gets the bit rate of a SPI module.
 
     @param  module      Module to get baud rate
     
     @retval Baud rate prescaler
 
 */
-SPI_BR_MODE getBaudRate(SPI_MODULE module) {
+uint32_t spiGetBitRate(SPI_MODULE module) {
 
-    return getRegVal16(spiGetBaseAdr(module)+R_SPI_CR1_OFF, N_SPI_BR, S_SPI_BR);
+    uint32_t clkSpeed;
+    SPI_BR_MODE brPresc = getRegVal16(spiGetBaseAdr(module)+R_SPI_CR1_OFF, N_SPI_BR, S_SPI_BR);
+    
+    switch (module) {
+        case 1:
+            clkSpeed = rccGetPerphClkFreq(RCC_PCLK_SPI1); break;
+        case 2:
+            clkSpeed = rccGetPerphClkFreq(RCC_PCLK_SPI2); break;
+        case 3:
+            clkSpeed = rccGetPerphClkFreq(RCC_PCLK_SPI3); break;
+        default: return 0;
+    }
+    return clkSpeed >> (brPresc + 1);
 
 }
 

@@ -11,7 +11,7 @@ int main() {
     gpioSetPinLevel(GPIO_A4, GPIO_VAL_HIGH);
     gpioSetPinLevel(GPIO_B3, GPIO_VAL_HIGH);
 
-    spiMasterModuleInit(1, GPIO_A7, GPIO_A6, GPIO_A5, 0);
+    spiMasterModuleInit(1, GPIO_A7, GPIO_A6, GPIO_A5, 0, 500000);
     uint8_t data[4] = {0x00, 0x39, 0x01, 0xFF};
     uint8_t rec[60] = {
         0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99,

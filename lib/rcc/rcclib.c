@@ -46,11 +46,21 @@ void rccReset(RCC_RST rst) {
 uint32_t rccGetClockFreq(RCC_CLOCK_TYPE clk) {
 
     if (clk == RCC_SYSCLK_CLK) {
-        clk = getRegVal(
+        RCC_SW_MODE swMode = getRegVal(
             R_RCC_BASE + R_RCC_CFGR_OFF,
             N_SWS,
             S_SWS
         );
+        switch (swMode) {
+            case RCC_SW_MSI:
+                clk = RCC_MSI_CLK; break;
+            case RCC_SW_HSI16:
+                clk = RCC_HSI16_CLK; break;
+            case RCC_SW_HSE:
+                clk = RCC_HSE_CLK; break;
+            case RCC_SW_PLL:
+                clk = RCC_PLL_CLK; break;
+        }
     }
 
     if (clk == RCC_HSE_CLK) {
@@ -78,7 +88,7 @@ uint32_t rccGetClockFreq(RCC_CLOCK_TYPE clk) {
             case RCC_MSIRNG_24M: return 24000000;
             case RCC_MSIRNG_32M: return 32000000;
             case RCC_MSIRNG_48M: return 48000000; 
-            default: return 0;
+            default: return 100000;
         }
 
     } else if (clk == RCC_HSI48_CLK) {
@@ -104,7 +114,7 @@ uint32_t rccGetClockFreq(RCC_CLOCK_TYPE clk) {
     @retval The clock speed of the peripheral in Hz
 
 */
-uint32_t rccGetPerphClkFreq(RCC_CLOCK_TYPE pclk) {
+uint32_t rccGetPerphClkFreq(RCC_PCLK pclk) {
 
     if (pclk & RCC_CLK_48MHZ) {
         return 48000000;
