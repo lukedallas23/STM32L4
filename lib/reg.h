@@ -93,4 +93,15 @@ uint8_t getRegVal8(uint32_t address, uint8_t off, uint8_t len);
 */
 void setRegVal8(uint32_t address, uint8_t val, uint8_t off, uint8_t len);
 
+
+/*
+    Gets the period in ns of a clock frequency in Hz
+
+    @param  freq        Frequency in Hz
+
+    @retval Period in ns (rounded down)
+
+*/
+uint32_t freqToPeriodNs(uint32_t freq);
+
 #endif

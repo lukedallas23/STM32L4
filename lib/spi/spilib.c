@@ -339,10 +339,11 @@ void spiTxFrame(SPI_MODULE module) {
     // If no buffer specified, send garbage
     if (spiBufInfo[module-1].txBuf == NULL) {
         if (spiGetFrameLength(module) <= 8) {
-            setRegVal8(spiGetBaseAdr(module)+R_SPI_DR_OFF, 0xFF, 0, 8);
+            setRegVal8(spiGetBaseAdr(module)+R_SPI_DR_OFF, 0, 0, 8);
         } else {
-            setRegVal16(spiGetBaseAdr(module)+R_SPI_DR_OFF, 0xFFFF, 0, 16);
+            setRegVal16(spiGetBaseAdr(module)+R_SPI_DR_OFF, 0, 0, 16);
         }
+        return;
     }
 
     if (spiGetFrameLength(module) <= 8) {
@@ -376,10 +377,12 @@ void spiRxFrame(SPI_MODULE module) {
     // If no buffer provided, discard received data.
     if (spiBufInfo[module-1].rxBuf == NULL) {
         if (spiGetFrameLength(module) <= 8) {
-            uint8_t garbage = getRegVal8(spiGetBaseAdr(module)+R_SPI_DR_OFF, 0, 8);
+            getRegVal8(spiGetBaseAdr(module)+R_SPI_DR_OFF, 0, 8);
         } else {
-            uint16_t garbage = getRegVal16(spiGetBaseAdr(module)+R_SPI_DR_OFF, 0, 16);
+            getRegVal16(spiGetBaseAdr(module)+R_SPI_DR_OFF, 0, 16);
         }
+        spiBufInfo[module-1].pos++;
+        return;
     }
 
     if (spiGetFrameLength(module) <= 8) {

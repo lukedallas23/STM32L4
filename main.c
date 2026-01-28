@@ -1,18 +1,18 @@
-#include "lib/gpio/gpiolib.h"
-#include "lib/spi/spilib.h"
+#include "dev/W5500/w5500.h"
+#include <string.h>
 
-// Read the version register from the W5500.
-// The rec data should equal {0xFF, 0xFF, 0xFF, 0x04}.
+#define W5500_MAIN_DEAFULT {1, GPIO_A7, GPIO_A6, GPIO_A5, GPIO_A4, \
+400000, {1, 2, 3, 4}, {255, 255, 255, 0}, {0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54}, {5, 6, 7, 8}}
 
 int main() {
 
-    gpioPinInit(GPIO_A4, GPIO_MODE_OUTPUT); // Chip select
     gpioPinInit(GPIO_B3, GPIO_MODE_OUTPUT); // Heartbeat LED
-    gpioSetPinLevel(GPIO_A4, GPIO_VAL_HIGH);
     gpioSetPinLevel(GPIO_B3, GPIO_VAL_HIGH);
 
-    spiMasterModuleInit(1, GPIO_A7, GPIO_A6, GPIO_A5, 0, 500000);
-    uint8_t data[4] = {0x00, 0x39, 0x01, 0xFF};
+    w5500_info w5500 = W5500_MAIN_DEAFULT;
+
+    w5500_init_device(&w5500);
+
     uint8_t rec[60] = {
         0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99,
         0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99,
@@ -22,16 +22,7 @@ int main() {
         0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99
     };
 
-    /*
-    gpioSetPinLevel(GPIO_A4, GPIO_VAL_LOW);
-    spiSendDataInt(1, 4, data, &rec[4]);
-    while (spiSendDataInt(1, 0, NULL, NULL) == 1);
-    spiSendDataInt(1, 4, data, &rec[8]);
-    while (spiSendDataInt(1, 0, NULL, NULL) == 1);
-    gpioSetPinLevel(GPIO_A4, GPIO_VAL_HIGH);
-    */
-    gpioSetPinLevel(GPIO_A4, GPIO_VAL_LOW);
-    spiSendDataInt(1, 4, data, &rec[4]);
+    w5500_read(&w5500, W5500_MR | W5500_CR, &rec[4], 50);
 
     while (1) {
         

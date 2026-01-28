@@ -36,7 +36,7 @@ typedef struct SPI_BUFFER_INFO_t {
 //
 // SPI Buffer Information
 //
-volatile extern SPI_BUFFER_INFO spiBufInfo[NUM_SPI_MODULE];
+extern volatile SPI_BUFFER_INFO spiBufInfo[NUM_SPI_MODULE];
 
 
 /*

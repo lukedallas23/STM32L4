@@ -9,6 +9,7 @@ lib/spi/spilib.o \
 lib/pindef.o \
 lib/reg.o \
 interruptTable.o \
+dev/W5500/w5500.o
 
 
 main.elf: $(objects)

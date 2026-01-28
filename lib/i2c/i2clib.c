@@ -26,9 +26,12 @@ uint32_t i2cGetBaseAdr(I2C_MODULE module) {
 
 }
 
-EXIT_STATUS i2cMasterModuleInit(I2C_MODULE module, GPIO_PIN sda, GPIO_PIN scl) {
+EXIT_STATUS i2cMasterModuleInit(I2C_MODULE module, GPIO_PIN sda, GPIO_PIN scl, uint32_t baudRateMax) {
 
     uint32_t baseAdr = i2cGetBaseAdr(module);
+    uint32_t baudPeriod = freqToPeriodNs(baudRateMax);
+    uint32_t clkPeriod;
+    uint32_t i2cPresc;
     
     // Check if module is supported and configure pins
     switch (module) {
@@ -76,6 +79,7 @@ EXIT_STATUS i2cMasterModuleInit(I2C_MODULE module, GPIO_PIN sda, GPIO_PIN scl) {
             gpioSetAltFn(sda, AF_I2C1);
             gpioSetAltFn(scl, AF_I2C1); 
             EnableIRQ(P_INT_I2C1_ER);
+            clkPeriod = freqToPeriodNs(rccGetPerphClkFreq(RCC_PCLK_I2C1));
             EnableIRQ(P_INT_I2C1_EV); break;
         case 2:
             rccReset(RCC_RST_I2C2);
@@ -83,6 +87,7 @@ EXIT_STATUS i2cMasterModuleInit(I2C_MODULE module, GPIO_PIN sda, GPIO_PIN scl) {
             gpioSetAltFn(sda, AF_I2C2);
             gpioSetAltFn(scl, AF_I2C2); 
             EnableIRQ(P_INT_I2C2_ER);
+            clkPeriod = freqToPeriodNs(rccGetPerphClkFreq(RCC_PCLK_I2C2));
             EnableIRQ(P_INT_I2C2_EV); break;
         case 3:
             rccReset(RCC_RST_I2C3);
@@ -90,6 +95,7 @@ EXIT_STATUS i2cMasterModuleInit(I2C_MODULE module, GPIO_PIN sda, GPIO_PIN scl) {
             gpioSetAltFn(sda, AF_I2C3);
             gpioSetAltFn(scl, AF_I2C3); 
             EnableIRQ(P_INT_I2C3_ER);
+            clkPeriod = freqToPeriodNs(rccGetPerphClkFreq(RCC_PCLK_I2C3));
             EnableIRQ(P_INT_I2C3_EV); break;
         case 4:
             rccReset(RCC_RST_I2C4);
@@ -97,10 +103,21 @@ EXIT_STATUS i2cMasterModuleInit(I2C_MODULE module, GPIO_PIN sda, GPIO_PIN scl) {
             gpioSetAltFn(sda, AF_I2C4);
             gpioSetAltFn(scl, AF_I2C4); 
             EnableIRQ(P_INT_I2C4_ER);
+            clkPeriod = freqToPeriodNs(rccGetPerphClkFreq(RCC_PCLK_I2C4));
             EnableIRQ(P_INT_I2C4_EV); break;
         default:
             return EXIT_UNKNOWN; break;
     }
+
+    // SET TIMING BASED ON CLK SPEED PROVIDED (SM FOR NOW)
+    i2cPresc = (baudPeriod-1) / clkPeriod;
+    if (i2cPresc > 15) return EXIT_UNSUPPORTED;
+    setRegVal(i2cGetBaseAdr(module) + R_I2C_TIMINGR_OFF, i2cPresc, N_PRESEC, S_PRESEC);
+
+    // SDADEL based on SDADEL <= {t_VD_DAT_MAX_Sm - t_r_MAX_Sm - t_AF_MAX - [(DNF + 4) * t_I2CCLK]} / {(PRESC + 1) * t_I2CCLK}
+    uint32_t sdadel = (t_VD_DAT_MAX_Sm - t_r_MAX_Sm - (4*clkPeriod)) / ((i2cPresc + 1)*clkPeriod);
+    setRegVal(i2cGetBaseAdr(module) + R_I2C_TIMINGR_OFF, sdadel, N_SDADEL, S_SDADEL);
+
 
     // Initilize I2C Module
     /*
