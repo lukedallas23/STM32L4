@@ -1,5 +1,5 @@
 CC = arm-none-eabi-gcc
-CFLAGS = -mcpu=cortex-m4 -mthumb -nostdlib -T linker_script.ld 
+CFLAGS = -mcpu=cortex-m4 -mthumb -nostdlib -T stm32/linker_script.ld 
 
 objects = lib/des/deslib.o \
 lib/dma/dmalib.o \
@@ -8,12 +8,12 @@ lib/rcc/rcclib.o \
 lib/spi/spilib.o \
 lib/pindef.o \
 lib/reg.o \
-interruptTable.o \
+stm32/interruptTable.o \
 dev/W5500/w5500.o
 
 
 main.elf: $(objects)
-	$(CC) $(CFLAGS) $^ main.c startup.c -o main.elf 
+	$(CC) $(CFLAGS) $^ main.c stm32/startup.c -o main.elf 
 
 $(objects): %.o: %.c
 	$(CC) $(CFLAGS) -c $^ -o $@

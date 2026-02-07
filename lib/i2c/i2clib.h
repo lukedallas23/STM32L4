@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include "../reg.h"
 #include "../gpio/gpiolib.h"
-#include "../../interruptTable.h"
+#include "../../stm32/interruptTable.h"
 
 typedef uint8_t I2C_MODULE;
 

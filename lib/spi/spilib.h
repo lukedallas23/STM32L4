@@ -3,7 +3,7 @@
 
 #include "../gpio/gpiolib.h"
 #include "def.h"
-#include "../../interruptTable.h"
+#include "../../stm32/interruptTable.h"
 #include "../reg.h"
 #include "../dma/dmalib.h"
 #include <stddef.h>

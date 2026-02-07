@@ -7,6 +7,7 @@
 #define     R_USART1_BASE       0x40013800
 #define     R_USART2_BASE       0x40004400
 #define     R_USART3_BASE       0x40004800
+#define     R_UART4_BASE        0x40004C00
 
 
 //
@@ -103,8 +104,8 @@ typedef enum {
 } USART_MME_MODE;
 
 typedef enum {
-    USART_M0_7_9_BIT    = 0,
-    USART_M0_8_BIT      = 1
+    USART_M0_7_8_BIT    = 0,
+    USART_M0_9_BIT      = 1
 } USART_M0_MODE;
 
 typedef enum {
