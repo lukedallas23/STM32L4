@@ -3,13 +3,14 @@
 
 void uartInitModule(uartInfo *info) {
 
-    uint32_t baseAddr = usartGetBaseAddr(info->module);
-    uint32_t clkFreq = rccGetPerphClkFreq(RCC_PCLK_USART1);
-    uint16_t UARTDIV = clkFreq / info->baudRate;
-
     // Set pheripheral clock
     rccReset(RCC_RST_USART1);
     rccSetClock(RCC_CLK_USART1, RCC_CLOCK_EN);
+
+    uint32_t baseAddr = usartGetBaseAddr(info->module);
+    uint32_t clkFreq = rccGetPerphClkFreq(RCC_PCLK_USART1);
+    clkFreq = 4000000;
+    uint16_t UARTDIV = clkFreq / info->baudRate;
 
     // Init GPIO Pin
     gpioPinInit(info->tx, GPIO_MODE_ALT_FN);
@@ -22,7 +23,7 @@ void uartInitModule(uartInfo *info) {
     setRegVal(baseAddr + R_USART_CR1_OFF, USART_M1_8_9_BIT, N_M1, S_M1);
 
     // Set Baud Rate - which is f_CK/USARTDIV
-    setRegVal(baseAddr + R_USART_BRR_OFF, UARTDIV, N_BRR, S_BRR);
+    setRegVal(baseAddr + R_USART_BRR_OFF, UARTDIV, N_USART_BRR, S_USART_BRR);
     info->baudRate = clkFreq / UARTDIV;
 
     // Enable module
@@ -32,13 +33,13 @@ void uartInitModule(uartInfo *info) {
 
 void uartTx(uartInfo *info, uint8_t *buf, uint32_t len) {
 
-    uint32_t baseAddr = usartGetBaseAddress(info->module);
+    uint32_t baseAddr = usartGetBaseAddr(info->module);
 
     setRegVal(baseAddr + R_USART_CR1_OFF, USART_TE_ENABLE, N_TE, S_TE);
 
     for (int byte = 0; byte < len; byte++) {
         setRegVal8(baseAddr + R_USART_TDR_OFF, buf[byte], N_TDR, S_TDR);
-        while (getRegVal(baseAddr + R_USART_ISR_OFF, N_TXE, S_USART_ISR) == USART_FLAG_CLEAR);
+        while (getRegVal(baseAddr + R_USART_ISR_OFF, N_USART_TXE, S_USART_ISR) == USART_FLAG_CLEAR);
     }
 
     while (getRegVal(baseAddr + R_USART_ISR_OFF, N_TC, S_USART_ISR) == USART_FLAG_CLEAR);

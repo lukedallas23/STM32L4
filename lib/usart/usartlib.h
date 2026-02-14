@@ -2,7 +2,6 @@
 #define UARTLIB_H
 
 #include "def.h"
-#include <stdlib.h>
 #include "../rcc/rcclib.h"
 #include "../gpio/gpiolib.h"
 #include "../../stm32/interruptTable.h"
@@ -21,7 +20,7 @@ typedef struct {
 	
 } uartInfo;
 
-uint32_t usartGetBaseAddress(UART_MODULE module);
+uint32_t usartGetBaseAddr(UART_MODULE module);
 void uartInitModule(uartInfo *info);
 void uartTx(uartInfo *info, uint8_t *buf, uint32_t len);
 

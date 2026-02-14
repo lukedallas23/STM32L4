@@ -6,6 +6,8 @@ lib/dma/dmalib.o \
 lib/gpio/gpiolib.o \
 lib/rcc/rcclib.o \
 lib/spi/spilib.o \
+lib/usart/usartlib.o \
+lib/usart/uartlib.o \
 lib/pindef.o \
 lib/reg.o \
 stm32/interruptTable.o \

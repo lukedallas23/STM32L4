@@ -43,8 +43,8 @@
 #define     N_PS                9
 #define     N_PEIE              8
 #define     N_TXEIE             7
-#define     N_TCIE              6
-#define     N_RXNEIE            5
+#define     N_USART_TCIE        6
+#define     N_USART_RXNEIE      5
 #define     N_IDLEIE            4
 #define     N_TE                3
 #define     N_RE                2
@@ -65,8 +65,8 @@
 #define     S_PS                1
 #define     S_PEIE              1
 #define     S_TXEIE             1
-#define     S_TCIE              1
-#define     S_RXNEIE            1
+#define     S_USART_TCIE        1
+#define     S_USART_RXNEIE      1
 #define     S_IDLEIE            1
 #define     S_TE                1
 #define     S_RE                1
@@ -184,8 +184,8 @@ typedef enum {
 #define     N_LINEN             14
 #define     N_STOP              12
 #define     N_CLKEN             11
-#define     N_CPOL              10
-#define     N_CHPA              9
+#define     N_USART_CPOL        10
+#define     N_USART_CHPA        9
 #define     N_LBCL              8
 #define     N_LBDIE             6
 #define     N_LBDL              5
@@ -203,8 +203,8 @@ typedef enum {
 #define     S_LINEN             1
 #define     S_STOP              2
 #define     S_CLKEN             1
-#define     S_CPOL              1
-#define     S_CHPA              1
+#define     S_USART_CPOL        1
+#define     S_USART_CHPA        1
 #define     S_LBCL              1
 #define     S_LBDIE             1
 #define     S_LBDL              1
@@ -325,27 +325,27 @@ typedef enum {
 #define     N_IREN              1
 #define     N_EIE               0
 
-#define     N_TCBGTIE           1
-#define     N_UCESM             1
-#define     N_WUFIE             1
-#define     N_WUS               2
-#define     N_SCARCNT           3
-#define     N_DEP               1
-#define     N_DEM               1
-#define     N_DDRE              1
-#define     N_OVRDIS            1
-#define     N_ONEBIT            1
-#define     N_CTSIE             1
-#define     N_CTSE              1
-#define     N_RTSE              1
-#define     N_DMAT              1
-#define     N_DMAR              1
-#define     N_SCEN              1
-#define     N_NACK              1
-#define     N_HDSEL             1
-#define     N_IRLP              1
-#define     N_IREN              1
-#define     N_EIE               1
+#define     S_TCBGTIE           1
+#define     S_UCESM             1
+#define     S_WUFIE             1
+#define     S_WUS               2
+#define     S_SCARCNT           3
+#define     S_DEP               1
+#define     S_DEM               1
+#define     S_DDRE              1
+#define     S_OVRDIS            1
+#define     S_ONEBIT            1
+#define     S_CTSIE             1
+#define     S_CTSE              1
+#define     S_RTSE              1
+#define     S_DMAT              1
+#define     S_DMAR              1
+#define     S_SCEN              1
+#define     S_NACK              1
+#define     S_HDSEL             1
+#define     S_IRLP              1
+#define     S_IREN              1
+#define     S_EIE               1
 
 typedef enum {
     USART_TCBGTIE_INHIBIT   = 0,
@@ -452,9 +452,9 @@ typedef enum {
 //
 // USART Baud Rate (USART_BRR) register definitions
 //
-#define     N_BRR               0
+#define     N_USART_BRR       0
 
-#define     S_BRR               16
+#define     S_USART_BRR       16
 
 
 //
@@ -511,9 +511,9 @@ typedef enum {
 #define     N_CTS               10
 #define     N_CTSIF             9
 #define     N_LBDF              8
-#define     N_TXE               7
+#define     N_USART_TXE         7
 #define     N_TC                6
-#define     N_RXNE              5
+#define     N_USART_RXNE        5
 #define     N_IDLE              4
 #define     N_ORE               3
 #define     N_NF                2

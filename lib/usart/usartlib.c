@@ -1,6 +1,6 @@
 #include "usartlib.h"
 
-uint32_t usartGetBaseAddress(UART_MODULE module) {
+uint32_t usartGetBaseAddr(UART_MODULE module) {
     switch (module) {
         case 1: return R_USART1_BASE;
         case 2: return R_USART2_BASE;
