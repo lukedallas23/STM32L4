@@ -19,15 +19,7 @@ int main() {
     info.baudRate = 9600;
 
     uartInitModule(&info);
-    while (1) {
-        
-        volatile int j = 250000;
-        //if (rec[7] == 0x04) {
-        //    j = 50000;
-        //}
-        for (volatile int i = 0; i < j; i++);
-        gpioSetPinLevel(GPIO_B3, !gpioGetPinLevel(GPIO_B3));;
-    }
+
     uartTx(&info, str, 12);
 
     //w5500_info w5500 = W5500_MAIN_DEAFULT;
@@ -39,11 +31,8 @@ int main() {
     while (1) {
         
         volatile int j = 250000;
-        //if (rec[7] == 0x04) {
-        //    j = 50000;
-        //}
         for (volatile int i = 0; i < j; i++);
-        gpioSetPinLevel(GPIO_B3, !gpioGetPinLevel(GPIO_B3));;
-    }
+            gpioSetPinLevel(GPIO_B3, !gpioGetPinLevel(GPIO_B3));;
+        }
     return 0;
 }

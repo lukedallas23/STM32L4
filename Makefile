@@ -11,8 +11,6 @@ lib/usart/uartlib.o \
 lib/pindef.o \
 lib/reg.o \
 stm32/interruptTable.o \
-dev/W5500/w5500.o
-
 
 main.elf: $(objects)
 	$(CC) $(CFLAGS) $^ main.c stm32/startup.c -o main.elf 
@@ -21,6 +19,6 @@ $(objects): %.o: %.c
 	$(CC) $(CFLAGS) -c $^ -o $@
 
 clean:
-	rm main.elf
 	rm $(objects)
+	rm main.elf
 	

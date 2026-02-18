@@ -1,5 +1,6 @@
 #include "w5500.h"
 
+UDPTable UDP;
 
 /*
     Initializes the W5500 device with the settings in the info provided.
@@ -12,8 +13,17 @@
     @param  info    Pointer to W5500 device info
 
 */
-void w5500_init_device(w5500_info *info) {
-    
+void w5500_init_device() {
+
+    /// THIS NEEDS TO BE CHANGED
+    w5500_info w5500 = W5500_INFO_DEFAULT;
+    w5500_info *info = &w5500;
+
+    UDP.UDPInfoSize = W5500_SOCKET_SIZE;
+    UDP.devInfo = malloc(sizeof(w5500_info));
+    memcpy(UDP.devInfo, info, sizeof(w5500_info));
+    // OTHER UDP TABLE DEFINITIONS, when complete
+
     spiMasterModuleInit(
         info->spiModule,
         info->mosi,
@@ -51,7 +61,7 @@ void w5500_init_device(w5500_info *info) {
 		w5500_write_reg(info, W5500_Sn_REG(socket) | W5500_Sn_RXBUF_SIZE, 0);
 		w5500_write_reg(info, W5500_Sn_REG(socket) | W5500_Sn_TXBUF_SIZE, 0);
 	}
-	
+
 }
 
 

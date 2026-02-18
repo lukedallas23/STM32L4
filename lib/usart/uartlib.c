@@ -39,7 +39,9 @@ void uartTx(uartInfo *info, uint8_t *buf, uint32_t len) {
 
     for (int byte = 0; byte < len; byte++) {
         setRegVal8(baseAddr + R_USART_TDR_OFF, buf[byte], N_TDR, S_TDR);
+        gpioSetPinLevel(GPIO_B3, GPIO_VAL_LOW);
         while (getRegVal(baseAddr + R_USART_ISR_OFF, N_USART_TXE, S_USART_ISR) == USART_FLAG_CLEAR);
+        gpioSetPinLevel(GPIO_B3, GPIO_VAL_HIGH);
     }
 
     while (getRegVal(baseAddr + R_USART_ISR_OFF, N_TC, S_USART_ISR) == USART_FLAG_CLEAR);

@@ -3,26 +3,9 @@
 
 #include "../../lib/spi/spilib.h"
 #include "../../lib/gpio/gpiolib.h"
-
-typedef struct {
-
-    uint8_t IPAddr3;
-    uint8_t IPAddr2;
-    uint8_t IPAddr1;
-    uint8_t IPAddr0;
-
-} IPv4_addr;
-
-typedef struct {
-
-    uint8_t MACAddr5;
-    uint8_t MACAddr4;
-    uint8_t MACAddr3;
-    uint8_t MACAddr2;
-    uint8_t MACAddr1;
-    uint8_t MACAddr0;
-
-} MAC_addr;
+#include "../../proto/udp/udp.h"
+#include <stdlib.h>
+#include <string.h>
 
 typedef enum {
 
@@ -44,7 +27,10 @@ typedef struct {
     IPv4_addr       gatewayIp;
     IPv4_addr       subnetMask;
     MAC_addr        macAddr;
-    IPv4_addr       sourceIp;       
+    IPv4_addr       sourceIp;
+    uint8_t         socketUsed;     // Each bit is one socket usage
+    uint64_t        TxBufSize;      // Each 5 bits is the power of buf size
+    uint64_t        RxBufSize;      // Each 5 bits is the power of buf size
 
 } w5500_info;
 
@@ -57,8 +43,8 @@ typedef struct {
     uint16_t		destPort;
     uint16_t		RxBufSizeKb; // 1, 2, 4, 8, or 16k
     uint16_t		TxBufSizeKb; // 1, 2, 4, 8, or 16k
-    uint16_t		RxPointer;
-    uint16_t		TxPointer;
+    uint16_t		RxPointer; // REMOVE
+    uint16_t		TxPointer; // REMOVE
 
 } w5500_socket;
 
@@ -68,6 +54,12 @@ typedef struct {
 
 // Default Socket Block
 #define     W5500_SOCKET_DEFAULT  {0, W5500_TCP_MODE, 0, {0, 0, 0, 0}, 0, 2, 2}
+
+#define     W5500_SOCKET_SIZE   sizeof(w5500_socket)+sizeof(UDPInfo)
+#define     W5500_DEVINFO_SIZE  sizeof(w5500_info)+sizeof(UDPTable)
+
+#define     _W5500_BUF_SIZE(SOCK, VAR)     ((VAR >> (5*SOCK)) & 0x1F)
+#define     _W5500_SET_BUF_SIZE(SOCK, VAR, SZ) ((~(0x1F << (5*SOCK)) & VAR) | (SZ << (5*SOCK)))
 
 #define		W5500_NUM_SOCKETS	8
 
@@ -169,7 +161,7 @@ typedef struct {
 
 #define     W5500_MR_RST    0x80
 
-void w5500_init_device(w5500_info *info);
+void w5500_init_device();
 void w5500_init_socket(w5500_info *info, w5500_socket *socket);
 void w5500_tx_data(w5500_info *info, w5500_socket *socket, uint8_t *buf, uint32_t len);
 uint16_t w5500_rx_data(w5500_info *info, w5500_socket *socket, uint8_t *buf, uint16_t len);
@@ -180,5 +172,16 @@ void w5500_read(w5500_info *info, uint32_t addr, void *data, uint32_t len);
 uint8_t w5500_read_reg(w5500_info *info, uint32_t addr);
 uint16_t w5500_read_reg16(w5500_info *info, uint32_t addr);
 void w5500_write_reg16(w5500_info *info, uint32_t addr, uint16_t data);
+
+/*
+                            ARG 1
+void    w5500_open_socket   UDPInfo*
+void    w5500_udp_send      UDPInfo*
+void    w5500_udp_recv      UDPInfo*
+void    w5500_udp_close     UDPInfo*      
+
+
+
+*/
 
 #endif
