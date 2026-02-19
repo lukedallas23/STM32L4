@@ -31,7 +31,7 @@ void* malloc(size_t size) {
     if (memData == NULL) {
 
         // Fisrt heap block will go to beggining to heap
-        currNode = &memData;
+        currNode = memData;
         newNode = (mem_block*)&_ebss;
         goto allocateMem;
     }

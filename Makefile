@@ -11,6 +11,10 @@ lib/usart/uartlib.o \
 lib/pindef.o \
 lib/reg.o \
 stm32/interruptTable.o \
+dev/W5500/w5500.o \
+std/stdlib/malloc.o \
+std/string/memcpy.o \
+std/string/memset.o
 
 main.elf: $(objects)
 	$(CC) $(CFLAGS) $^ main.c stm32/startup.c -o main.elf 

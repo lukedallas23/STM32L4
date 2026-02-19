@@ -1,11 +1,11 @@
 #include "dev/W5500/w5500.h"
 #include "lib/usart/usartlib.h"
-#include <string.h>
+//#include <string.h>
 
 #define W5500_MAIN_DEAFULT {1, GPIO_A7, GPIO_A6, GPIO_A5, GPIO_A4, \
 400000, {192, 168, 1, 1}, {0, 0, 0, 0}, {0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54}, {102, 72, 84, 21}}
 
-char str[13] = "Hello World\n\0";
+char str[14] = "Hello World\n\r\0";
 
 int main() {
 
@@ -20,8 +20,6 @@ int main() {
 
     uartInitModule(&info);
 
-    uartTx(&info, str, 12);
-
     //w5500_info w5500 = W5500_MAIN_DEAFULT;
     //w5500_socket sock0 = {0, W5500_UDP_MODE, 55554, {192, 168, 1, 1}, 55555, 2, 2, 0, 0};
 
@@ -30,9 +28,12 @@ int main() {
 
     while (1) {
         
-        volatile int j = 250000;
+        volatile int j = 2500000;
         for (volatile int i = 0; i < j; i++);
-            gpioSetPinLevel(GPIO_B3, !gpioGetPinLevel(GPIO_B3));;
-        }
+        gpioSetPinLevel(GPIO_B3, !gpioGetPinLevel(GPIO_B3));
+
+        uartTx(&info, str, 13);
+    }
+        
     return 0;
 }

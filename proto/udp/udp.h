@@ -41,7 +41,7 @@ typedef struct {
 	uint16_t	destPort;		// Destination UDP port
 	IPv4_addr	destIp;			// Destination IPv4 Address
 	int			status;			// Status of socket
-	void 		*otherInfo;		// Pointer to device specific socket information
+	void 		*reserved;		// Pointer to device specific socket information. DO NOT USE
 	
 } UDPInfo;
 
@@ -54,12 +54,12 @@ typedef struct {
  */
 typedef struct {
 	
-	void *devInfo;				// Device Info
-    int  UDPInfoSize;           // Size of UDP Info
-	void (*open)(UDPInfo*);		// Open Socket
-	void (*send)(UDPInfo*);		// Send Data
-	void (*recv)(UDPInfo*);		// Receive Data
-	void (*close)(UDPInfo*);	// Close Scoekt
+	void *devInfo;							// Device Info
+    int  UDPInfoSize;           			// Size of UDP Info
+	void (*open)(UDPInfo*);					// Open Socket
+	void (*send)(UDPInfo*, uint8_t*, int);	// Send Data
+	void (*recv)(UDPInfo*, uint8_t*, int);	// Receive Data
+	void (*close)(UDPInfo*);				// Close Scoekt
 	
 } UDPTable;
 

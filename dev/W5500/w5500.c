@@ -23,6 +23,7 @@ void w5500_init_device() {
     UDP.devInfo = malloc(sizeof(w5500_info));
     memcpy(UDP.devInfo, info, sizeof(w5500_info));
     // OTHER UDP TABLE DEFINITIONS, when complete
+    UDP.open = w5500_udp_open;
 
     spiMasterModuleInit(
         info->spiModule,
@@ -66,54 +67,89 @@ void w5500_init_device() {
 
 
 /*
-    Initializes a W5500 socket with the settings provided. This includes port,
-    layer 4 protocol, destination IP address, and memory allocation. To change a setting,
-    call the function again with updated socket info.
+	Open a socket in UDP mode.
+	
+	@param	info	 UDP Information for socket to open.
 
-    Socket information is reset on a device reset.
 
-    @param  info    Pointer to W5500 device info
-    @param  socket  Pointer to socket info
 
 */
-void w5500_init_socket(w5500_info *info, w5500_socket *socket) {
-
-	// TCP or UDP mode
-    w5500_write_reg(info, W5500_Sn_REG(socket->socketNum) | W5500_Sn_MR , socket->protocol);
+void w5500_udp_open(UDPInfo *info) {
 	
-	// Port number
-	w5500_write_reg16(info, W5500_Sn_REG(socket->socketNum) | W5500_Sn_PORT, socket->port);
+	uint8_t socket;
+    w5500_info *devInfo = (w5500_info*)UDP.devInfo;
+    w5500_socket *sockInfo = (w5500_socket*)malloc(sizeof(w5500_info));
 	
+	// Find first avaliable socket : RN ASSUMES THERE IS ALWAYS ONE AVALIABLE
+	for (int i = 0; i < 8; i++) {
+		if ((devInfo->socketUsed >> i) & 1) {
+			socket = i;
+			devInfo->socketUsed |= 1 << socket;
+			break;
+		}
+	}
+	
+    info->reserved = sockInfo;
+	sockInfo->socketNum = socket;
+	sockInfo->protocol = W5500_UDP_MODE;
+	
+	// UDP mode
+    w5500_write_reg(UDP.devInfo, W5500_Sn_REG(socket) | W5500_Sn_MR , W5500_UDP_MODE);
+    
 	// Destination IP address
-	w5500_write(info, W5500_Sn_REG(socket->socketNum) | W5500_Sn_DIPR, &socket->destIp, 4);
+	w5500_write(UDP.devInfo, W5500_Sn_REG(socket) | W5500_Sn_DIPR, &info->destIp, 4);
 	
 	// Destination Port number
-	w5500_write_reg16(info, W5500_Sn_REG(socket->socketNum) | W5500_Sn_DPORT, socket->destPort);
+	w5500_write_reg16(UDP.devInfo, W5500_Sn_REG(socket) | W5500_Sn_DPORT, info->destPort);
 	
-	// Maximum segment size
-	uint16_t mssr;
-	switch (socket->protocol) {
-		case W5500_TCP_MODE:
-			mssr = 1460; break;
-		case W5500_UDP_MODE:
-			mssr = 1472; break;
-		case W5500_MACRAW_MODE:
-			mssr = 1514; break;
-		default:
-			mssr = 0;
-	}
-
-	w5500_write_reg16(info, W5500_Sn_REG(socket->socketNum) | W5500_Sn_MSSR, mssr);
+	// Maximum segment size for UDP
+	w5500_write_reg16(UDP.devInfo, W5500_Sn_REG(socket) | W5500_Sn_MSSR, 1472);
 	
-	// RX and TX Buf Size
-	w5500_write_reg(info, W5500_Sn_REG(socket->socketNum) | W5500_Sn_RXBUF_SIZE, socket->RxBufSizeKb);
-	w5500_write_reg(info, W5500_Sn_REG(socket->socketNum) | W5500_Sn_TXBUF_SIZE, socket->TxBufSizeKb);
-	socket->TxPointer = 0;
-	socket->RxPointer = 0;
-
+	// RX and TX Buf Size : RN 2 KB for each : RN assumes there is always 2KB avlaible
+	w5500_write_reg(UDP.devInfo, W5500_Sn_REG(socket) | W5500_Sn_RXBUF_SIZE, 2);
+	w5500_write_reg(UDP.devInfo, W5500_Sn_REG(socket) | W5500_Sn_TXBUF_SIZE, 2);
+	_W5500_SET_BUF_SIZE(socket, devInfo->TxBufSize, 2);
+	_W5500_SET_BUF_SIZE(socket, devInfo->RxBufSize, 2);
+	
 	// Keep alive for 60 seconds
-	w5500_write_reg(info, W5500_Sn_REG(socket->socketNum) | W5500_Sn_KPALVTR, 12);
+	w5500_write_reg(UDP.devInfo, W5500_Sn_REG(socket) | W5500_Sn_KPALVTR, 12);
+}
 
+
+/*
+	Send data over a UDP socket.
+	
+	@param	info	UDP Info for socket to send
+	@param	data	Data to send
+	@param	len		Length of data to send
+
+
+*/
+void w5500_udp_send(UDPInfo *info, uint8_t *data, int len) {
+	
+	// RN Assumes data is valid and len is valid : Under 2kB
+    w5500_info *devInfo = (w5500_info*)UDP.devInfo;
+    w5500_socket *sockInfo = (w5500_socket*)info->reserved;
+
+	int TxBufSize = _W5500_BUF_SIZE(sockInfo->socketNum, devInfo->TxBufSize) * 1024;
+	
+	// Save data to TX buffer - may require two write if there is an overflow
+	if (sockInfo->TxPointer + len > TxBufSize) {
+		uint16_t write1 = TxBufSize - sockInfo->TxPointer;
+		w5500_write(UDP.devInfo, W5500_Sn_TX(sockInfo->socketNum) + sockInfo->TxPointer, data, write1);
+		w5500_write(UDP.devInfo, W5500_Sn_TX(sockInfo->socketNum), &data[write1], len - write1);
+	
+	} else {
+		w5500_write(UDP.devInfo, W5500_Sn_TX(sockInfo->socketNum), data, len);
+	}
+	
+	sockInfo->TxPointer = (len + sockInfo->TxPointer) % (TxBufSize);
+
+    // Increment pointer reg
+    w5500_write_reg16(UDP.devInfo, W5500_Sn_REG(sockInfo->socketNum) | W5500_Sn_TX_WR, sockInfo->TxPointer);
+    
+    // Input a send command to send the data
+    w5500_write_reg(UDP.devInfo, W5500_Sn_REG(sockInfo->socketNum) | W5500_Sn_CR, W5500_Sn_CR_SEND);
 }
 
 
@@ -181,23 +217,6 @@ uint16_t w5500_rx_data(w5500_info *info, w5500_socket *socket, uint8_t *buf, uin
     w5500_write_reg(info, W5500_Sn_REG(socket->socketNum) | W5500_Sn_CR, W5500_Sn_CR_SEND);
 
     return rxBytesToRead;
-}
-
-/*
-    Open a socket on the W5500 according to the info provided on an open socket.
-    
-    @param  info    W5500 info
-    @param  socket  Socket info
-
-
-*/
-void w5500_open_socket(w5500_info *info, w5500_socket *socket) {
-
-    w5500_init_socket(info, socket);
-    w5500_write_reg(info, W5500_Sn_REG(socket->socketNum) | W5500_Sn_CR, W5500_Sn_CR_OPEN);
-
-    // Wait until the UDP port is open
-    while (w5500_read_reg(info, W5500_Sn_REG(socket->socketNum) | W5500_Sn_SR) != W5500_Sn_SR_UDP);
 }
 
 

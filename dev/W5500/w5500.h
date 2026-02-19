@@ -4,7 +4,7 @@
 #include "../../lib/spi/spilib.h"
 #include "../../lib/gpio/gpiolib.h"
 #include "../../proto/udp/udp.h"
-#include <stdlib.h>
+#include "../../std/stdlib/stdlib.h"
 #include <string.h>
 
 typedef enum {
@@ -43,8 +43,8 @@ typedef struct {
     uint16_t		destPort;
     uint16_t		RxBufSizeKb; // 1, 2, 4, 8, or 16k
     uint16_t		TxBufSizeKb; // 1, 2, 4, 8, or 16k
-    uint16_t		RxPointer; // REMOVE
-    uint16_t		TxPointer; // REMOVE
+    uint16_t		RxPointer;
+    uint16_t		TxPointer;
 
 } w5500_socket;
 
@@ -172,7 +172,8 @@ void w5500_read(w5500_info *info, uint32_t addr, void *data, uint32_t len);
 uint8_t w5500_read_reg(w5500_info *info, uint32_t addr);
 uint16_t w5500_read_reg16(w5500_info *info, uint32_t addr);
 void w5500_write_reg16(w5500_info *info, uint32_t addr, uint16_t data);
-
+void w5500_udp_open(UDPInfo *info);
+void w5500_udp_send(UDPInfo *info, uint8_t *data, int len);
 /*
                             ARG 1
 void    w5500_open_socket   UDPInfo*
